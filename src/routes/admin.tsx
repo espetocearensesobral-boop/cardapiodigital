@@ -12,7 +12,11 @@ import {
   Layers,
   Sparkles,
   Save,
+  ShoppingBag,
+  RefreshCw,
+  FileText,
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { menuQueryOptions, type MenuItem, type Addon } from "@/lib/menu";
@@ -62,6 +66,34 @@ export const Route = createFileRoute("/admin")({
   component: AdminPage,
 });
 
+interface DbOrder {
+  id: string;
+  code: string;
+  customer_name: string;
+  phone: string;
+  order_type: "delivery" | "local";
+  street?: string | null;
+  number?: string | null;
+  complement?: string | null;
+  neighborhood?: string | null;
+  reference?: string | null;
+  table_number?: string | null;
+  payment_method?: string | null;
+  change_for?: string | null;
+  items: Array<{
+    name: string;
+    qty: number;
+    unitPrice: number;
+    addons?: Array<{ name: string; price: number }>;
+    obs?: string;
+  }>;
+  notes?: string | null;
+  subtotal: number;
+  delivery_fee: number;
+  total: number;
+  created_at: string;
+}
+
 function AdminPage() {
   const { data: menu } = useSuspenseQuery(menuQueryOptions);
   const queryClient = useQueryClient();
@@ -85,6 +117,27 @@ function AdminPage() {
   const [isAddonDialogOpen, setIsAddonDialogOpen] = useState(false);
   const [newAddonName, setNewAddonName] = useState("");
   const [newAddonPrice, setNewAddonPrice] = useState<number | "">("");
+
+  // Orders Cloud Database Query
+  const [selectedOrderDetails, setSelectedOrderDetails] = useState<DbOrder | null>(null);
+  const {
+    data: cloudOrders = [],
+    isLoading: isLoadingOrders,
+    refetch: refetchOrders,
+  } = useQuery({
+    queryKey: ["cloud_orders_list"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("orders")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) {
+        console.warn("Could not load cloud orders:", error);
+        return [];
+      }
+      return (data || []) as unknown as DbOrder[];
+    },
+  });
 
   // Product Save Mutation
   const saveMutation = useMutation({
@@ -218,9 +271,12 @@ function AdminPage() {
       </header>
 
       <Tabs defaultValue="produtos" className="w-full">
-        <TabsList className="mb-6 grid w-full grid-cols-2 max-w-md">
+        <TabsList className="mb-6 grid w-full grid-cols-3 max-w-xl">
           <TabsTrigger value="produtos" className="gap-2">
             <Package className="size-4" /> Produtos
+          </TabsTrigger>
+          <TabsTrigger value="pedidos" className="gap-2">
+            <ShoppingBag className="size-4" /> Pedidos Nuvem
           </TabsTrigger>
           <TabsTrigger value="sistema" className="gap-2">
             <SettingsIcon className="size-4" /> Painel Sistema
@@ -327,6 +383,87 @@ function AdminPage() {
                     </TableRow>
                   );
                 })}
+              </TableBody>
+            </Table>
+          </div>
+        </TabsContent>
+
+        {/* TAB PEDIDOS NUVEM */}
+        <TabsContent value="pedidos" className="space-y-4">
+          <div className="flex items-center justify-between bg-card p-4 rounded-xl border">
+            <div>
+              <h3 className="font-semibold text-lg flex items-center gap-2">
+                📦 Pedidos Gravados no Banco de Dados
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                Acompanhe em tempo real todos os pedidos recebidos e salvos na nuvem
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => refetchOrders()}
+              className="gap-2"
+              disabled={isLoadingOrders}
+            >
+              <RefreshCw className={`size-4 ${isLoadingOrders ? "animate-spin" : ""}`} />
+              Atualizar Lista
+            </Button>
+          </div>
+
+          <div className="rounded-md border bg-card">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Código</TableHead>
+                  <TableHead>Data / Hora</TableHead>
+                  <TableHead>Cliente</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Pagamento</TableHead>
+                  <TableHead>Total</TableHead>
+                  <TableHead className="text-right">Comprovante</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {cloudOrders.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                      {isLoadingOrders
+                        ? "Carregando pedidos da nuvem..."
+                        : "Nenhum pedido gravado no banco de dados até o momento."}
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  cloudOrders.map((ord: DbOrder) => (
+                    <TableRow key={ord.id}>
+                      <TableCell className="font-bold text-primary">{ord.code}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {ord.created_at
+                          ? new Date(ord.created_at).toLocaleString("pt-BR")
+                          : "Recente"}
+                      </TableCell>
+                      <TableCell>
+                        <div className="font-medium">{ord.customer_name}</div>
+                        <div className="text-xs text-muted-foreground">{ord.phone}</div>
+                      </TableCell>
+                      <TableCell className="capitalize">
+                        {ord.order_type === "delivery" ? "🛵 Entrega" : "🍽 Local"}
+                      </TableCell>
+                      <TableCell className="capitalize">{ord.payment_method || "—"}</TableCell>
+                      <TableCell className="font-semibold">{brl(Number(ord.total))}</TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setSelectedOrderDetails(ord)}
+                          className="gap-1.5"
+                        >
+                          <FileText className="size-4" /> Detalhes
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </div>
@@ -754,6 +891,124 @@ function AdminPage() {
 
           <DialogFooter>
             <Button onClick={() => setIsAddonDialogOpen(false)}>Concluir</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* MODAL DETALHES / COMPROVANTE DO PEDIDO NUVEM */}
+      <Dialog open={!!selectedOrderDetails} onOpenChange={() => setSelectedOrderDetails(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between">
+              <span>Comprovante de Pedido</span>
+              <span className="text-primary font-mono text-sm">{selectedOrderDetails?.code}</span>
+            </DialogTitle>
+          </DialogHeader>
+
+          {selectedOrderDetails && (
+            <div className="space-y-4 py-2 text-sm font-sans">
+              <div className="rounded-lg bg-muted/60 p-3 space-y-1 text-xs">
+                <div>
+                  <strong>Cliente:</strong> {selectedOrderDetails.customer_name} (
+                  {selectedOrderDetails.phone})
+                </div>
+                <div>
+                  <strong>Data/Hora:</strong>{" "}
+                  {selectedOrderDetails.created_at
+                    ? new Date(selectedOrderDetails.created_at).toLocaleString("pt-BR")
+                    : "—"}
+                </div>
+                <div>
+                  <strong>Tipo:</strong>{" "}
+                  {selectedOrderDetails.order_type === "delivery"
+                    ? "Delivery / Entrega"
+                    : "Consumo no Local"}
+                </div>
+                {selectedOrderDetails.order_type === "delivery" ? (
+                  <div>
+                    <strong>Endereço:</strong> {selectedOrderDetails.street},{" "}
+                    {selectedOrderDetails.number} - {selectedOrderDetails.neighborhood}
+                    {selectedOrderDetails.complement ? ` (${selectedOrderDetails.complement})` : ""}
+                    {selectedOrderDetails.reference
+                      ? ` | Ref: ${selectedOrderDetails.reference}`
+                      : ""}
+                  </div>
+                ) : (
+                  selectedOrderDetails.table_number && (
+                    <div>
+                      <strong>Mesa:</strong> Nº {selectedOrderDetails.table_number}
+                    </div>
+                  )
+                )}
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-xs text-muted-foreground uppercase tracking-wider mb-2">
+                  Itens do Pedido
+                </h4>
+                <div className="space-y-2 max-h-48 overflow-y-auto border rounded-lg p-3 bg-card">
+                  {Array.isArray(selectedOrderDetails.items) &&
+                    selectedOrderDetails.items.map((it, idx) => (
+                      <div
+                        key={idx}
+                        className="border-b last:border-0 pb-2 last:pb-0 text-xs space-y-0.5"
+                      >
+                        <div className="flex justify-between font-semibold">
+                          <span>
+                            {it.qty}x {it.name}
+                          </span>
+                          <span>{brl(it.unitPrice * it.qty)}</span>
+                        </div>
+                        {it.addons && it.addons.length > 0 && (
+                          <div className="text-muted-foreground text-[11px] pl-2">
+                            + {it.addons.map((a) => `${a.name} (${brl(a.price)})`).join(", ")}
+                          </div>
+                        )}
+                        {it.obs && (
+                          <div className="text-muted-foreground italic text-[11px] pl-2">
+                            Obs: {it.obs}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                </div>
+              </div>
+
+              {selectedOrderDetails.notes && (
+                <div className="text-xs bg-amber-500/10 border border-amber-500/20 text-amber-900 dark:text-amber-200 p-2.5 rounded-md">
+                  <strong>Observação do Pedido:</strong> {selectedOrderDetails.notes}
+                </div>
+              )}
+
+              <div className="space-y-1.5 border-t pt-3 text-xs">
+                <div className="flex justify-between text-muted-foreground">
+                  <span>Subtotal:</span>
+                  <span>{brl(Number(selectedOrderDetails.subtotal))}</span>
+                </div>
+                <div className="flex justify-between text-muted-foreground">
+                  <span>Taxa de Entrega:</span>
+                  <span>{brl(Number(selectedOrderDetails.delivery_fee))}</span>
+                </div>
+                <div className="flex justify-between text-muted-foreground">
+                  <span>Forma de Pagamento:</span>
+                  <span className="capitalize">{selectedOrderDetails.payment_method || "—"}</span>
+                </div>
+                {selectedOrderDetails.change_for && (
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Troco para:</span>
+                    <span>R$ {selectedOrderDetails.change_for}</span>
+                  </div>
+                )}
+                <div className="flex justify-between font-bold text-sm text-foreground pt-1 border-t">
+                  <span>Total do Pedido:</span>
+                  <span className="text-primary">{brl(Number(selectedOrderDetails.total))}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button onClick={() => setSelectedOrderDetails(null)}>Fechar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

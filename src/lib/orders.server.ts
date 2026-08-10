@@ -31,13 +31,13 @@ function money(value: number) {
 
 function makeCode() {
   const n = Math.floor(1000 + Math.random() * 9000);
-  return `BP-${n}`;
+  return `LBP-${n}`;
 }
 
 const PAYMENT_LABEL: Record<string, string> = {
   pix: "Pix",
-  dinheiro: "Dinheiro",
-  cartao: "Cartão na entrega",
+  dinheiro: "Dinheiro em Espécie",
+  cartao: "Cartão na Entrega",
 };
 
 export function buildWhatsappMessage(
@@ -46,53 +46,66 @@ export function buildWhatsappMessage(
   code: string,
 ) {
   const lines: string[] = [];
-  lines.push(`🍖 *NOVO PEDIDO ${code}*`);
-  lines.push("━━━━━━━━━━━━━━");
-  lines.push(`👤 *Cliente:* ${input.customerName}`);
-  lines.push(`📞 *Contato:* ${input.phone}`);
-  lines.push(`📍 *Tipo:* ${input.orderType === "delivery" ? "Entrega" : "Consumo no local"}`);
+  lines.push(`🍕 *LA BELLA PIZZA — COMPROVANTE DE PEDIDO*`);
+  lines.push(`📋 *Código:* ${code}`);
+  lines.push(`⏰ *Data/Hora:* ${new Date().toLocaleString("pt-BR")}`);
+  lines.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  lines.push(`👤 *CLIENTE:* ${input.customerName}`);
+  lines.push(`📞 *CONTATO:* ${input.phone}`);
+  lines.push(
+    `🛵 *TIPO DE PEDIDO:* ${input.orderType === "delivery" ? "Delivery / Entrega" : "Consumo / Retirada no Local"}`,
+  );
 
   if (input.orderType === "delivery") {
     lines.push("");
-    lines.push("🏠 *Endereço*");
-    lines.push(`${input.street}, ${input.number}`);
-    if (input.complement) lines.push(input.complement);
-    lines.push(`Bairro: ${input.neighborhood}`);
-    if (input.reference) lines.push(`Ref: ${input.reference}`);
+    lines.push("📍 *ENDEREÇO DE ENTREGA:*");
+    lines.push(`• *Rua/Av:* ${input.street || "Não informado"}, Nº ${input.number || "S/N"}`);
+    if (input.complement) lines.push(`• *Complemento:* ${input.complement}`);
+    lines.push(`• *Bairro:* ${input.neighborhood || "Não informado"}`);
+    if (input.reference) lines.push(`• *Ponto de Ref:* ${input.reference}`);
   } else if (input.tableNumber) {
-    lines.push(`🍽 *Mesa:* ${input.tableNumber}`);
+    lines.push(`🍽 *MESA:* Nº ${input.tableNumber}`);
   }
 
   lines.push("");
-  lines.push("━━━━━━━━━━━━━━");
-  lines.push("🛒 *ITENS*");
+  lines.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  lines.push("🛒 *ITENS DO PEDIDO:*");
+  lines.push("");
   for (const item of input.items) {
-    lines.push(`• ${item.qty}x ${item.name} — R$ ${money(item.unitPrice * item.qty)}`);
-    if (item.addons.length) {
-      lines.push(`   ➕ ${item.addons.map((a) => a.name).join(", ")}`);
+    lines.push(`*${item.qty}x ${item.name}* — R$ ${money(item.unitPrice * item.qty)}`);
+    if (item.addons && item.addons.length > 0) {
+      lines.push(
+        `   ➕ *Adicionais/Bordas:* ${item.addons.map((a) => `${a.name} (+R$ ${money(a.price)})`).join(", ")}`,
+      );
     }
-    if (item.obs) lines.push(`   📝 ${item.obs}`);
+    if (item.obs) lines.push(`   📝 *Obs:* ${item.obs}`);
   }
 
   if (input.notes) {
     lines.push("");
-    lines.push(`💬 *Observações:* ${input.notes}`);
+    lines.push(`💬 *OBSERVAÇÕES GERAIS:* ${input.notes}`);
   }
 
   lines.push("");
-  lines.push("━━━━━━━━━━━━━━");
-  lines.push(`Subtotal: R$ ${money(totals.subtotal)}`);
-  if (totals.deliveryFee > 0) lines.push(`Entrega: R$ ${money(totals.deliveryFee)}`);
-  lines.push(`💰 *TOTAL: R$ ${money(totals.total)}*`);
-
-  if (input.paymentMethod) {
-    lines.push("");
-    lines.push(`💳 *Pagamento:* ${PAYMENT_LABEL[input.paymentMethod] ?? input.paymentMethod}`);
-    if (input.changeFor) lines.push(`Troco para: R$ ${input.changeFor}`);
+  lines.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  lines.push("💰 *RESUMO FINANCEIRO:*");
+  lines.push(`• Subtotal dos itens: R$ ${money(totals.subtotal)}`);
+  if (totals.deliveryFee > 0) {
+    lines.push(`• Taxa de entrega: R$ ${money(totals.deliveryFee)}`);
+  } else {
+    lines.push(`• Taxa de entrega: Grátis`);
   }
-
+  lines.push(
+    `💳 *Forma de Pagamento:* ${PAYMENT_LABEL[input.paymentMethod ?? "pix"] ?? input.paymentMethod}`,
+  );
+  if (input.changeFor) lines.push(`• Troco para: R$ ${input.changeFor}`);
   lines.push("");
-  lines.push("Obrigado pela preferência ❤️");
+  lines.push(`🔥 *TOTAL DO PEDIDO: R$ ${money(totals.total)}*`);
+  lines.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  lines.push(
+    "Obrigado pela preferência! Seu pedido foi registrado com sucesso em nosso banco de dados em nuvem. ❤️",
+  );
+
   return lines.join("\n");
 }
 
@@ -129,7 +142,7 @@ export async function createOrder(input: OrderInput) {
   const code = makeCode();
 
   try {
-    await supabaseAdmin.from("orders").insert({
+    const { error: insertError } = await supabaseAdmin.from("orders").insert({
       code,
       customer_name: input.customerName,
       phone: input.phone,
@@ -148,12 +161,19 @@ export async function createOrder(input: OrderInput) {
       delivery_fee: deliveryFee,
       total,
     });
+    if (insertError) {
+      console.warn("[Orders] Could not record order in Supabase:", insertError);
+    } else {
+      console.log(`[Orders] Order ${code} recorded successfully in cloud database.`);
+    }
   } catch (err) {
     console.warn("[Orders] Could not record order in Supabase:", err);
   }
 
   const message = buildWhatsappMessage(input, { subtotal, deliveryFee, total }, code);
-  const whatsappUrl = `https://wa.me/${RESTAURANT.whatsapp}?text=${encodeURIComponent(message)}`;
+  // Requested number 88998340085 -> 5588998340085
+  const targetPhone = "5588998340085";
+  const whatsappUrl = `https://wa.me/${targetPhone}?text=${encodeURIComponent(message)}`;
 
   return { code, total, whatsappUrl };
 }
