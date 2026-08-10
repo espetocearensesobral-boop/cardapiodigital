@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { menuQueryOptions, type MenuItem, type Addon } from "@/lib/menu";
 import { brl } from "@/lib/format";
+import { playNotificationSound } from "@/lib/sound";
 import {
   useSystemSettings,
   saveSystemSettings,
@@ -154,6 +155,7 @@ function AdminPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["menu"] });
       toast.success("Produto salvo com sucesso!");
+      playNotificationSound();
       setIsItemDialogOpen(false);
       setEditingItem(null);
     },
@@ -170,6 +172,7 @@ function AdminPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["menu"] });
       toast.success("Produto removido!");
+      playNotificationSound();
     },
     onError: (error) => {
       toast.error(`Erro ao remover: ${error.message}`);
@@ -215,6 +218,7 @@ function AdminPage() {
     saveCategories(updated);
     setNewCatLabel("");
     toast.success("Categoria adicionada!");
+    playNotificationSound();
   };
 
   const handleDeleteCategory = (id: string) => {
@@ -225,6 +229,7 @@ function AdminPage() {
     const updated = categories.filter((c) => c.id !== id);
     saveCategories(updated);
     toast.success("Categoria removida!");
+    playNotificationSound();
   };
 
   // Addon Actions
@@ -240,76 +245,184 @@ function AdminPage() {
     setNewAddonName("");
     setNewAddonPrice("");
     toast.success("Adicional/Borda salvo!");
+    playNotificationSound();
   };
 
   const handleDeleteAddon = (id: string) => {
     const updated = globalAddons.filter((a) => a.id !== id);
     saveGlobalAddons(updated);
     toast.success("Adicional removido!");
+    playNotificationSound();
   };
 
   // System Settings Save
   const handleSaveSystemSettings = () => {
     saveSystemSettings(sysForm);
     toast.success("Configurações do sistema salvas com sucesso!");
+    playNotificationSound();
   };
 
   return (
-    <div className="mx-auto min-h-screen w-full max-w-5xl bg-background p-4 md:p-8">
-      <header className="mb-6 flex items-center justify-between border-b pb-4">
-        <div className="flex items-center gap-4">
-          <Link to="/" className="text-muted-foreground hover:text-foreground">
-            <ArrowLeft className="size-6" />
+    <div className="mx-auto min-h-screen w-full max-w-5xl bg-background p-3 sm:p-6 md:p-8">
+      <header className="mb-4 sm:mb-6 flex flex-col sm:flex-row sm:items-center justify-between border-b pb-4 gap-3">
+        <div className="flex items-center gap-3">
+          <Link
+            to="/"
+            className="flex size-10 items-center justify-center rounded-xl bg-card border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shrink-0"
+            title="Voltar ao Cardápio"
+          >
+            <ArrowLeft className="size-5" />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Painel Administrativo</h1>
-            <p className="text-sm text-muted-foreground">
-              Gerencie produtos, categorias, adicionais e configurações da {systemSettings.name}
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Painel Administrativo</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground">
+              Gerencie produtos, categorias, adicionais e configurações
             </p>
           </div>
         </div>
       </header>
 
       <Tabs defaultValue="produtos" className="w-full">
-        <TabsList className="mb-6 grid w-full grid-cols-3 max-w-xl">
-          <TabsTrigger value="produtos" className="gap-2">
-            <Package className="size-4" /> Produtos
+        <TabsList className="mb-4 sm:mb-6 flex w-full overflow-x-auto border bg-card p-1 rounded-xl shadow-xs gap-1">
+          <TabsTrigger
+            value="produtos"
+            className="flex-1 min-w-[100px] gap-1.5 text-xs sm:text-sm py-2"
+          >
+            <Package className="size-4 shrink-0" /> Produtos
           </TabsTrigger>
-          <TabsTrigger value="pedidos" className="gap-2">
-            <ShoppingBag className="size-4" /> Pedidos Nuvem
+          <TabsTrigger
+            value="pedidos"
+            className="flex-1 min-w-[120px] gap-1.5 text-xs sm:text-sm py-2"
+          >
+            <ShoppingBag className="size-4 shrink-0" /> Pedidos Nuvem
           </TabsTrigger>
-          <TabsTrigger value="sistema" className="gap-2">
-            <SettingsIcon className="size-4" /> Painel Sistema
+          <TabsTrigger
+            value="sistema"
+            className="flex-1 min-w-[110px] gap-1.5 text-xs sm:text-sm py-2"
+          >
+            <SettingsIcon className="size-4 shrink-0" /> Painel Sistema
           </TabsTrigger>
         </TabsList>
 
         {/* TAB PRODUTOS */}
         <TabsContent value="produtos" className="space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-3 bg-card p-4 rounded-xl border">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-card p-3 sm:p-4 rounded-xl border shadow-xs">
             <div className="flex flex-wrap items-center gap-2">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setIsCategoryDialogOpen(true)}
-                className="gap-1.5"
+                className="gap-1.5 text-xs h-9"
               >
-                <Layers className="size-4" /> Categorias ({categories.length})
+                <Layers className="size-3.5" /> Categorias ({categories.length})
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setIsAddonDialogOpen(true)}
-                className="gap-1.5"
+                className="gap-1.5 text-xs h-9"
               >
-                <Sparkles className="size-4" /> Adicionais & Bordas ({globalAddons.length})
+                <Sparkles className="size-3.5" /> Adicionais ({globalAddons.length})
               </Button>
             </div>
-            <Button onClick={handleAddItem} className="gap-2">
+            <Button
+              onClick={handleAddItem}
+              className="gap-2 h-9 text-xs sm:text-sm w-full sm:w-auto"
+            >
               <Plus className="size-4" /> Novo Produto
             </Button>
           </div>
 
-          <div className="rounded-md border bg-card">
+          {/* Versão Mobile: Cards de Produtos */}
+          <div className="grid grid-cols-1 gap-3 md:hidden">
+            {menu.map((item) => {
+              const categoryLabel =
+                categories.find((c) => c.id === item.category)?.label || item.category;
+
+              return (
+                <div
+                  key={item.id}
+                  className="flex flex-col gap-3 rounded-xl border bg-card p-3.5 shadow-xs transition-all"
+                >
+                  <div className="flex items-start gap-3">
+                    {item.image_url ? (
+                      <img
+                        src={item.image_url}
+                        alt={item.name}
+                        className="size-16 rounded-lg object-cover border shrink-0"
+                      />
+                    ) : (
+                      <div className="flex size-16 shrink-0 items-center justify-center rounded-lg bg-muted border">
+                        <ImageIcon className="size-6 text-muted-foreground" />
+                      </div>
+                    )}
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <h4 className="font-bold text-sm truncate">{item.name}</h4>
+                        <span className="font-bold text-primary text-sm shrink-0">
+                          {brl(item.price)}
+                        </span>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                        <span className="rounded bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground capitalize">
+                          {categoryLabel}
+                        </span>
+                        {item.badge && (
+                          <span className="rounded bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
+                            {item.badge}
+                          </span>
+                        )}
+                      </div>
+
+                      {item.description && (
+                        <p className="text-xs text-muted-foreground line-clamp-2 mt-1.5">
+                          {item.description}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between border-t pt-2.5 mt-1 text-xs">
+                    <div>
+                      {item.available ? (
+                        <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                          • Disponível
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center rounded-full bg-destructive/10 px-2.5 py-0.5 text-[11px] font-semibold text-destructive">
+                          • Indisponível
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEditItem(item)}
+                        className="h-8 gap-1 px-2.5 text-xs"
+                      >
+                        <Pencil className="size-3.5" /> Editar
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 gap-1 px-2.5 text-xs text-destructive hover:text-destructive"
+                        onClick={() => handleDeleteItem(item.id)}
+                      >
+                        <Trash2 className="size-3.5" /> Excluir
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Versão Desktop: Tabela de Produtos */}
+          <div className="hidden md:block rounded-xl border bg-card overflow-x-auto shadow-xs">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -333,7 +446,7 @@ function AdminPage() {
                           <img
                             src={item.image_url}
                             alt={item.name}
-                            className="size-10 rounded-md object-cover"
+                            className="size-10 rounded-md object-cover border"
                           />
                         ) : (
                           <div className="flex size-10 items-center justify-center rounded-md bg-muted">
@@ -350,23 +463,23 @@ function AdminPage() {
                         ) : null}
                       </TableCell>
                       <TableCell className="capitalize">{categoryLabel}</TableCell>
-                      <TableCell>{brl(item.price)}</TableCell>
+                      <TableCell className="font-semibold">{brl(item.price)}</TableCell>
                       <TableCell className="text-xs text-muted-foreground">
                         {item.addons?.length ? `${item.addons.length} opção(ões)` : "Nenhum"}
                       </TableCell>
                       <TableCell>
                         {item.available ? (
-                          <span className="inline-flex items-center rounded-full bg-success/10 px-2 py-1 text-xs font-medium text-success">
+                          <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
                             Disponível
                           </span>
                         ) : (
-                          <span className="inline-flex items-center rounded-full bg-destructive/10 px-2 py-1 text-xs font-medium text-destructive">
+                          <span className="inline-flex items-center rounded-full bg-destructive/10 px-2 py-0.5 text-xs font-semibold text-destructive">
                             Indisponível
                           </span>
                         )}
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
+                        <div className="flex justify-end gap-1">
                           <Button variant="ghost" size="icon" onClick={() => handleEditItem(item)}>
                             <Pencil className="size-4" />
                           </Button>
@@ -390,28 +503,86 @@ function AdminPage() {
 
         {/* TAB PEDIDOS NUVEM */}
         <TabsContent value="pedidos" className="space-y-4">
-          <div className="flex items-center justify-between bg-card p-4 rounded-xl border">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-card p-3.5 sm:p-4 rounded-xl border shadow-xs">
             <div>
-              <h3 className="font-semibold text-lg flex items-center gap-2">
-                📦 Pedidos Gravados no Banco de Dados
+              <h3 className="font-semibold text-base sm:text-lg flex items-center gap-2">
+                📦 Pedidos Gravados na Nuvem
               </h3>
               <p className="text-xs text-muted-foreground">
-                Acompanhe em tempo real todos os pedidos recebidos e salvos na nuvem
+                Acompanhe em tempo real todos os pedidos recebidos no banco de dados
               </p>
             </div>
             <Button
               variant="outline"
               size="sm"
               onClick={() => refetchOrders()}
-              className="gap-2"
+              className="gap-2 h-9 text-xs sm:text-sm shrink-0"
               disabled={isLoadingOrders}
             >
-              <RefreshCw className={`size-4 ${isLoadingOrders ? "animate-spin" : ""}`} />
+              <RefreshCw className={`size-3.5 ${isLoadingOrders ? "animate-spin" : ""}`} />
               Atualizar Lista
             </Button>
           </div>
 
-          <div className="rounded-md border bg-card">
+          {/* Versão Mobile: Cards de Pedidos */}
+          <div className="grid grid-cols-1 gap-3 md:hidden">
+            {cloudOrders.length === 0 ? (
+              <div className="text-center py-10 bg-card rounded-xl border p-4 text-xs text-muted-foreground">
+                {isLoadingOrders
+                  ? "Carregando pedidos da nuvem..."
+                  : "Nenhum pedido gravado no banco de dados até o momento."}
+              </div>
+            ) : (
+              cloudOrders.map((ord: DbOrder) => (
+                <div
+                  key={ord.id}
+                  className="flex flex-col gap-2.5 rounded-xl border bg-card p-3.5 shadow-xs"
+                >
+                  <div className="flex items-center justify-between border-b pb-2">
+                    <span className="font-bold text-primary text-sm font-mono">{ord.code}</span>
+                    <span className="text-[11px] text-muted-foreground">
+                      {ord.created_at
+                        ? new Date(ord.created_at).toLocaleString("pt-BR")
+                        : "Recente"}
+                    </span>
+                  </div>
+
+                  <div className="flex items-start justify-between text-xs">
+                    <div>
+                      <div className="font-semibold text-sm">{ord.customer_name}</div>
+                      <div className="text-muted-foreground">{ord.phone}</div>
+                    </div>
+                    <div className="text-right font-bold text-sm text-foreground">
+                      {brl(Number(ord.total))}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-t pt-2 mt-0.5 text-xs">
+                    <div className="flex items-center gap-2">
+                      <span className="rounded bg-muted px-2 py-0.5 text-[11px] font-medium">
+                        {ord.order_type === "delivery" ? "🛵 Delivery" : "🍽 Local"}
+                      </span>
+                      <span className="rounded bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary capitalize">
+                        {ord.payment_method || "—"}
+                      </span>
+                    </div>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setSelectedOrderDetails(ord)}
+                      className="h-8 text-xs gap-1.5 ml-auto"
+                    >
+                      <FileText className="size-3.5" /> Ver Detalhes
+                    </Button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Versão Desktop: Tabela de Pedidos */}
+          <div className="hidden md:block rounded-xl border bg-card overflow-x-auto shadow-xs">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -436,7 +607,7 @@ function AdminPage() {
                 ) : (
                   cloudOrders.map((ord: DbOrder) => (
                     <TableRow key={ord.id}>
-                      <TableCell className="font-bold text-primary">{ord.code}</TableCell>
+                      <TableCell className="font-bold text-primary font-mono">{ord.code}</TableCell>
                       <TableCell className="text-xs text-muted-foreground">
                         {ord.created_at
                           ? new Date(ord.created_at).toLocaleString("pt-BR")
@@ -638,22 +809,23 @@ function AdminPage() {
 
       {/* MODAL NOVO / EDITAR PRODUTO */}
       <Dialog open={isItemDialogOpen} onOpenChange={setIsItemDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle>{editingItem?.id ? "Editar Produto" : "Novo Produto"}</DialogTitle>
           </DialogHeader>
 
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
+          <div className="grid gap-4 py-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+              <div className="space-y-1.5">
                 <Label htmlFor="item-name">Nome do Produto</Label>
                 <Input
                   id="item-name"
+                  placeholder="Ex: Pizza Calabresa"
                   value={editingItem?.name || ""}
                   onChange={(e) => setEditingItem((prev) => ({ ...prev, name: e.target.value }))}
                 />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <Label htmlFor="item-category">Categoria</Label>
                 <Select
                   value={editingItem?.category || categories[0]?.id || "tradicional"}
@@ -675,8 +847,8 @@ function AdminPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+              <div className="space-y-1.5">
                 <Label htmlFor="item-price">Preço (R$)</Label>
                 <Input
                   id="item-price"
@@ -688,11 +860,11 @@ function AdminPage() {
                   }
                 />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <Label htmlFor="item-badge">Selo / Destaque (Opcional)</Label>
                 <Input
                   id="item-badge"
-                  placeholder="Ex: Mais Vendida, Favorito"
+                  placeholder="Ex: Mais Vendida"
                   value={editingItem?.badge || ""}
                   onChange={(e) =>
                     setEditingItem((prev) => ({
@@ -702,7 +874,7 @@ function AdminPage() {
                   }
                 />
               </div>
-              <div className="flex items-center space-x-2 pt-8">
+              <div className="flex items-center space-x-2 pt-2 sm:pt-7">
                 <Switch
                   id="item-available"
                   checked={editingItem?.available ?? true}
@@ -710,14 +882,17 @@ function AdminPage() {
                     setEditingItem((prev) => ({ ...prev, available: checked }))
                   }
                 />
-                <Label htmlFor="item-available">Disponível</Label>
+                <Label htmlFor="item-available" className="cursor-pointer">
+                  Disponível no Menu
+                </Label>
               </div>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label htmlFor="item-desc">Descrição</Label>
               <Textarea
                 id="item-desc"
+                placeholder="Ingredientes e detalhes..."
                 value={editingItem?.description || ""}
                 onChange={(e) =>
                   setEditingItem((prev) => ({ ...prev, description: e.target.value }))
@@ -725,10 +900,11 @@ function AdminPage() {
               />
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label htmlFor="item-image">URL da Imagem</Label>
               <Input
                 id="item-image"
+                placeholder="https://..."
                 value={editingItem?.image_url || ""}
                 onChange={(e) => setEditingItem((prev) => ({ ...prev, image_url: e.target.value }))}
               />
@@ -739,7 +915,7 @@ function AdminPage() {
               <Label className="text-sm font-semibold">
                 Adicionais & Bordas Vinculadas a este Produto
               </Label>
-              <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-2 border rounded-md">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-40 overflow-y-auto p-2 border rounded-lg bg-muted/30">
                 {globalAddons.map((ga) => {
                   const currentAddons: Addon[] = editingItem?.addons || [];
                   const isChecked = currentAddons.some((a) => a.name === ga.name);
@@ -747,7 +923,7 @@ function AdminPage() {
                   return (
                     <label
                       key={ga.id}
-                      className="flex items-center gap-2 text-sm p-1.5 rounded hover:bg-muted/50 cursor-pointer"
+                      className="flex items-center gap-2 text-xs p-2 rounded-md hover:bg-muted cursor-pointer"
                     >
                       <input
                         type="checkbox"
@@ -761,9 +937,9 @@ function AdminPage() {
                           }
                           setEditingItem((prev) => ({ ...prev, addons: next }));
                         }}
-                        className="rounded text-primary focus:ring-primary"
+                        className="rounded text-primary focus:ring-primary size-4"
                       />
-                      <span>
+                      <span className="font-medium truncate">
                         {ga.name} ({brl(ga.price)})
                       </span>
                     </label>
@@ -773,13 +949,18 @@ function AdminPage() {
             </div>
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsItemDialogOpen(false)}>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setIsItemDialogOpen(false)}
+              className="w-full sm:w-auto"
+            >
               Cancelar
             </Button>
             <Button
               onClick={() => editingItem && saveMutation.mutate(editingItem)}
               disabled={saveMutation.isPending}
+              className="w-full sm:w-auto"
             >
               {saveMutation.isPending ? "Salvando..." : "Salvar Produto"}
             </Button>
@@ -789,25 +970,30 @@ function AdminPage() {
 
       {/* MODAL GERENCIAR CATEGORIAS */}
       <Dialog open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle>Gerenciar Categorias</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4 py-2">
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <Input
                 placeholder="Nova Categoria (Ex: Especiais)"
                 value={newCatLabel}
                 onChange={(e) => setNewCatLabel(e.target.value)}
+                className="flex-1"
               />
-              <Input
-                placeholder="Emoji"
-                className="w-20 text-center"
-                value={newCatEmoji}
-                onChange={(e) => setNewCatEmoji(e.target.value)}
-              />
-              <Button onClick={handleAddCategory}>Adicionar</Button>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Emoji"
+                  className="w-20 text-center"
+                  value={newCatEmoji}
+                  onChange={(e) => setNewCatEmoji(e.target.value)}
+                />
+                <Button onClick={handleAddCategory} className="w-full sm:w-auto">
+                  Adicionar
+                </Button>
+              </div>
             </div>
 
             <div className="space-y-2 max-h-60 overflow-y-auto border rounded-lg p-2">
@@ -823,7 +1009,7 @@ function AdminPage() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="size-8 text-destructive hover:text-destructive"
+                    className="size-8 text-destructive hover:text-destructive shrink-0"
                     onClick={() => handleDeleteCategory(cat.id)}
                   >
                     <Trash2 className="size-4" />
@@ -834,36 +1020,43 @@ function AdminPage() {
           </div>
 
           <DialogFooter>
-            <Button onClick={() => setIsCategoryDialogOpen(false)}>Concluir</Button>
+            <Button onClick={() => setIsCategoryDialogOpen(false)} className="w-full sm:w-auto">
+              Concluir
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* MODAL GERENCIAR ADICIONAIS / BORDAS */}
       <Dialog open={isAddonDialogOpen} onOpenChange={setIsAddonDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle>Gerenciar Adicionais & Bordas Globais</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4 py-2">
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <Input
                 placeholder="Nome (Ex: Borda de Catupiry)"
                 value={newAddonName}
                 onChange={(e) => setNewAddonName(e.target.value)}
+                className="flex-1"
               />
-              <Input
-                type="number"
-                step="0.5"
-                placeholder="Preço R$"
-                className="w-28"
-                value={newAddonPrice}
-                onChange={(e) =>
-                  setNewAddonPrice(e.target.value === "" ? "" : Number(e.target.value))
-                }
-              />
-              <Button onClick={handleAddAddon}>Adicionar</Button>
+              <div className="flex gap-2">
+                <Input
+                  type="number"
+                  step="0.5"
+                  placeholder="Preço R$"
+                  className="w-28"
+                  value={newAddonPrice}
+                  onChange={(e) =>
+                    setNewAddonPrice(e.target.value === "" ? "" : Number(e.target.value))
+                  }
+                />
+                <Button onClick={handleAddAddon} className="w-full sm:w-auto">
+                  Adicionar
+                </Button>
+              </div>
             </div>
 
             <div className="space-y-2 max-h-60 overflow-y-auto border rounded-lg p-2">
@@ -878,7 +1071,7 @@ function AdminPage() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="size-8 text-destructive hover:text-destructive"
+                      className="size-8 text-destructive hover:text-destructive shrink-0"
                       onClick={() => handleDeleteAddon(addon.id)}
                     >
                       <Trash2 className="size-4" />
@@ -890,44 +1083,49 @@ function AdminPage() {
           </div>
 
           <DialogFooter>
-            <Button onClick={() => setIsAddonDialogOpen(false)}>Concluir</Button>
+            <Button onClick={() => setIsAddonDialogOpen(false)} className="w-full sm:w-auto">
+              Concluir
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* MODAL DETALHES / COMPROVANTE DO PEDIDO NUVEM */}
       <Dialog open={!!selectedOrderDetails} onOpenChange={() => setSelectedOrderDetails(null)}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle className="flex items-center justify-between">
+            <DialogTitle className="flex items-center justify-between gap-2">
               <span>Comprovante de Pedido</span>
-              <span className="text-primary font-mono text-sm">{selectedOrderDetails?.code}</span>
+              <span className="text-primary font-mono text-sm font-bold bg-primary/10 px-2.5 py-0.5 rounded">
+                {selectedOrderDetails?.code}
+              </span>
             </DialogTitle>
           </DialogHeader>
 
           {selectedOrderDetails && (
             <div className="space-y-4 py-2 text-sm font-sans">
-              <div className="rounded-lg bg-muted/60 p-3 space-y-1 text-xs">
+              <div className="rounded-xl border bg-muted/50 p-3 space-y-1.5 text-xs">
                 <div>
-                  <strong>Cliente:</strong> {selectedOrderDetails.customer_name} (
-                  {selectedOrderDetails.phone})
+                  <strong className="text-foreground">Cliente:</strong>{" "}
+                  {selectedOrderDetails.customer_name} ({selectedOrderDetails.phone})
                 </div>
                 <div>
-                  <strong>Data/Hora:</strong>{" "}
+                  <strong className="text-foreground">Data/Hora:</strong>{" "}
                   {selectedOrderDetails.created_at
                     ? new Date(selectedOrderDetails.created_at).toLocaleString("pt-BR")
                     : "—"}
                 </div>
                 <div>
-                  <strong>Tipo:</strong>{" "}
+                  <strong className="text-foreground">Tipo de Pedido:</strong>{" "}
                   {selectedOrderDetails.order_type === "delivery"
-                    ? "Delivery / Entrega"
-                    : "Consumo no Local"}
+                    ? "🛵 Delivery / Entrega"
+                    : "🍽 Consumo no Local"}
                 </div>
                 {selectedOrderDetails.order_type === "delivery" ? (
                   <div>
-                    <strong>Endereço:</strong> {selectedOrderDetails.street},{" "}
-                    {selectedOrderDetails.number} - {selectedOrderDetails.neighborhood}
+                    <strong className="text-foreground">Endereço:</strong>{" "}
+                    {selectedOrderDetails.street}, {selectedOrderDetails.number} -{" "}
+                    {selectedOrderDetails.neighborhood}
                     {selectedOrderDetails.complement ? ` (${selectedOrderDetails.complement})` : ""}
                     {selectedOrderDetails.reference
                       ? ` | Ref: ${selectedOrderDetails.reference}`
@@ -936,7 +1134,8 @@ function AdminPage() {
                 ) : (
                   selectedOrderDetails.table_number && (
                     <div>
-                      <strong>Mesa:</strong> Nº {selectedOrderDetails.table_number}
+                      <strong className="text-foreground">Mesa:</strong> Nº{" "}
+                      {selectedOrderDetails.table_number}
                     </div>
                   )
                 )}
@@ -946,7 +1145,7 @@ function AdminPage() {
                 <h4 className="font-semibold text-xs text-muted-foreground uppercase tracking-wider mb-2">
                   Itens do Pedido
                 </h4>
-                <div className="space-y-2 max-h-48 overflow-y-auto border rounded-lg p-3 bg-card">
+                <div className="space-y-2 max-h-48 overflow-y-auto border rounded-xl p-3 bg-card">
                   {Array.isArray(selectedOrderDetails.items) &&
                     selectedOrderDetails.items.map((it, idx) => (
                       <div
@@ -975,7 +1174,7 @@ function AdminPage() {
               </div>
 
               {selectedOrderDetails.notes && (
-                <div className="text-xs bg-amber-500/10 border border-amber-500/20 text-amber-900 dark:text-amber-200 p-2.5 rounded-md">
+                <div className="text-xs bg-amber-500/10 border border-amber-500/20 text-amber-900 dark:text-amber-200 p-2.5 rounded-lg">
                   <strong>Observação do Pedido:</strong> {selectedOrderDetails.notes}
                 </div>
               )}
@@ -999,16 +1198,20 @@ function AdminPage() {
                     <span>R$ {selectedOrderDetails.change_for}</span>
                   </div>
                 )}
-                <div className="flex justify-between font-bold text-sm text-foreground pt-1 border-t">
+                <div className="flex justify-between font-bold text-sm text-foreground pt-2 border-t">
                   <span>Total do Pedido:</span>
-                  <span className="text-primary">{brl(Number(selectedOrderDetails.total))}</span>
+                  <span className="text-primary font-bold text-base">
+                    {brl(Number(selectedOrderDetails.total))}
+                  </span>
                 </div>
               </div>
             </div>
           )}
 
           <DialogFooter>
-            <Button onClick={() => setSelectedOrderDetails(null)}>Fechar</Button>
+            <Button onClick={() => setSelectedOrderDetails(null)} className="w-full sm:w-auto">
+              Fechar
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

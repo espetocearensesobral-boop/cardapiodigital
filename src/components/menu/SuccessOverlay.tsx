@@ -1,6 +1,8 @@
 import { useEffect } from "react";
 import { CheckCircle2, MessageCircle, Loader2 } from "lucide-react";
+import confetti from "canvas-confetti";
 import { brl } from "@/lib/format";
+import { playSuccessSound } from "@/lib/sound";
 
 type Props = {
   open: boolean;
@@ -12,15 +14,32 @@ type Props = {
 
 export function SuccessOverlay({ open, code, total, whatsappUrl, onNewOrder }: Props) {
   useEffect(() => {
-    if (open && whatsappUrl) {
-      // Automatic redirect to WhatsApp
-      const timer = setTimeout(() => {
-        if (typeof window !== "undefined") {
-          window.location.href = whatsappUrl;
-        }
-      }, 400);
+    if (open) {
+      // Play sound effect
+      playSuccessSound();
 
-      return () => clearTimeout(timer);
+      // Trigger colorful confetti burst
+      try {
+        confetti({
+          particleCount: 80,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ["#dc2626", "#f59e0b", "#10b981", "#ef4444", "#ffffff"],
+        });
+      } catch (e) {
+        console.warn("Confetti error:", e);
+      }
+
+      if (whatsappUrl) {
+        // Automatic redirect to WhatsApp
+        const timer = setTimeout(() => {
+          if (typeof window !== "undefined") {
+            window.location.href = whatsappUrl;
+          }
+        }, 800);
+
+        return () => clearTimeout(timer);
+      }
     }
   }, [open, whatsappUrl]);
 
