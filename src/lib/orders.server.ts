@@ -73,12 +73,13 @@ export function buildWhatsappMessage(
   for (const item of input.items) {
     lines.push(`🍕 *${item.qty}x ${item.name}* — R$ ${money(item.unitPrice * item.qty)}`);
     if (item.addons && item.addons.length > 0) {
-      lines.push(
-        `➕ *Adicionais:* ${item.addons.map((a) => `${a.name} (+R$ ${money(a.price)})`).join(", ")}`,
-      );
+      lines.push(`   ➕ *Adicionais:*`);
+      for (const addon of item.addons) {
+        lines.push(`     • ${addon.name} (+R$ ${money(addon.price)})`);
+      }
     }
     if (item.obs) {
-      lines.push(`📝 *Obs:* ${item.obs}`);
+      lines.push(`   📝 *Obs:* ${item.obs}`);
     }
   }
 
