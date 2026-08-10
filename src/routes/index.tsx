@@ -102,7 +102,10 @@ function MenuPage() {
   }
 
   return (
-    <div className="mx-auto min-h-screen w-full max-w-[480px] bg-background pb-28">
+    <div
+      suppressHydrationWarning
+      className="mx-auto min-h-screen w-full max-w-[480px] bg-background pb-28"
+    >
       <header className="sticky top-0 z-30 bg-card px-4 pb-4 pt-[calc(1rem+env(safe-area-inset-top))] shadow-soft">
         <div className="flex items-center gap-3">
           <div className="bg-brasa flex size-11 items-center justify-center rounded-xl text-primary-foreground shadow-brand">

@@ -121,9 +121,10 @@ export function saveGlobalAddons(addons: GlobalAddon[]) {
 }
 
 export function useSystemSettings() {
-  const [settings, setSettings] = useState<SystemSettings>(getSystemSettings);
+  const [settings, setSettings] = useState<SystemSettings>(DEFAULT_SETTINGS);
 
   useEffect(() => {
+    setSettings(getSystemSettings());
     const handleUpdate = () => setSettings(getSystemSettings());
     window.addEventListener("lbp_settings_updated", handleUpdate);
     window.addEventListener("storage", handleUpdate);
@@ -137,9 +138,10 @@ export function useSystemSettings() {
 }
 
 export function useCategories() {
-  const [categories, setCategories] = useState<CategoryItem[]>(getCategories);
+  const [categories, setCategories] = useState<CategoryItem[]>(DEFAULT_CATEGORIES);
 
   useEffect(() => {
+    setCategories(getCategories());
     const handleUpdate = () => setCategories(getCategories());
     window.addEventListener("lbp_settings_updated", handleUpdate);
     window.addEventListener("storage", handleUpdate);
@@ -153,9 +155,10 @@ export function useCategories() {
 }
 
 export function useGlobalAddons() {
-  const [addons, setAddons] = useState<GlobalAddon[]>(getGlobalAddons);
+  const [addons, setAddons] = useState<GlobalAddon[]>(DEFAULT_GLOBAL_ADDONS);
 
   useEffect(() => {
+    setAddons(getGlobalAddons());
     const handleUpdate = () => setAddons(getGlobalAddons());
     window.addEventListener("lbp_settings_updated", handleUpdate);
     window.addEventListener("storage", handleUpdate);
