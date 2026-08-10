@@ -79,19 +79,27 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       {
         name: "viewport",
-        content: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no",
+        content:
+          "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover",
       },
-      { name: "theme-color", content: "#C62828" },
-      { title: "Brasa Premium — Cardápio Digital" },
+      { name: "theme-color", content: "#dc2626" },
+      { title: "La Bella Pizza — Cardápio Digital & Delivery" },
       {
         name: "description",
         content:
-          "Cardápio digital da Brasa Premium: churrasco na brasa com entrega e pedido pelo WhatsApp.",
+          "La Bella Pizza: Pizzas artesanais assadas no forno a lenha, entregues quentinhas. Pedido rápido pelo WhatsApp.",
       },
-      { property: "og:title", content: "Brasa Premium — Cardápio Digital" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
+      { name: "apple-mobile-web-app-title", content: "La Bella Pizza" },
+      { name: "mobile-web-app-capable", content: "yes" },
+      { name: "application-name", content: "La Bella Pizza" },
+      { name: "format-detection", content: "telephone=no" },
+      { property: "og:title", content: "La Bella Pizza — Cardápio Digital & Delivery" },
       {
         property: "og:description",
-        content: "Churrasco na brasa com entrega rápida e pedido direto pelo WhatsApp.",
+        content:
+          "Pizzas artesanais de forno a lenha entregues quentinhas. Peça online no WhatsApp com facilidade.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -107,7 +115,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: appCss,
       },
+      { rel: "manifest", href: "/manifest.json" },
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "apple-touch-icon", href: "/favicon.ico" },
     ],
   }),
 

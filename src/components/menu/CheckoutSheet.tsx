@@ -112,7 +112,40 @@ export function CheckoutSheet({ open, onClose, cart, notes, onSuccess }: Props) 
 
   function set(field: keyof typeof form, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors((prev) => {
+        const copy = { ...prev };
+        delete copy[field];
+        return copy;
+      });
+    }
   }
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>, nextId?: string) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (nextId) {
+        const nextEl = document.getElementById(nextId);
+        if (nextEl) {
+          nextEl.focus();
+          return;
+        }
+      }
+      // If no nextId, attempt to submit if valid
+      if (validate()) {
+        mutation.mutate();
+      } else {
+        toast.error("Revise os campos destacados.");
+      }
+    }
+  }
+
+  const getFieldClass = (fieldKey: string) => {
+    if (errors[fieldKey]) {
+      return `${fieldClass} border-destructive bg-destructive/5 text-destructive placeholder:text-destructive/50 focus:border-destructive`;
+    }
+    return fieldClass;
+  };
 
   return (
     <BottomSheet
@@ -166,15 +199,18 @@ export function CheckoutSheet({ open, onClose, cart, notes, onSuccess }: Props) 
 
         <div className="space-y-3">
           <div>
-            <label className="mb-1.5 block text-xs font-semibold" htmlFor="nome">
-              Nome
+            <label className="mb-1.5 block text-xs font-semibold" htmlFor="input-nome">
+              Nome Completo <span className="text-destructive">*</span>
             </label>
             <input
-              id="nome"
+              id="input-nome"
               value={form.customerName}
               onChange={(e) => set("customerName", e.target.value)}
-              placeholder="Seu nome completo"
-              className={fieldClass}
+              onKeyDown={(e) => handleKeyDown(e, "input-tel")}
+              enterKeyHint="next"
+              autoComplete="name"
+              placeholder="Ex: João Silva"
+              className={getFieldClass("customerName")}
             />
             {errors["customerName"] ? (
               <p className="mt-1 text-xs text-destructive">{errors["customerName"]}</p>
@@ -182,16 +218,22 @@ export function CheckoutSheet({ open, onClose, cart, notes, onSuccess }: Props) 
           </div>
 
           <div>
-            <label className="mb-1.5 block text-xs font-semibold" htmlFor="tel">
-              WhatsApp
+            <label className="mb-1.5 block text-xs font-semibold" htmlFor="input-tel">
+              WhatsApp / Contato <span className="text-destructive">*</span>
             </label>
             <input
-              id="tel"
-              inputMode="numeric"
+              id="input-tel"
+              inputMode="tel"
+              type="tel"
               value={form.phone}
               onChange={(e) => set("phone", maskPhone(e.target.value))}
+              onKeyDown={(e) =>
+                handleKeyDown(e, orderType === "delivery" ? "input-rua" : "input-mesa")
+              }
+              enterKeyHint="next"
+              autoComplete="tel"
               placeholder="(88) 99999-0000"
-              className={fieldClass}
+              className={getFieldClass("phone")}
             />
             {errors["phone"] ? (
               <p className="mt-1 text-xs text-destructive">{errors["phone"]}</p>
@@ -202,30 +244,35 @@ export function CheckoutSheet({ open, onClose, cart, notes, onSuccess }: Props) 
             <>
               <div className="grid grid-cols-[1fr_88px] gap-3">
                 <div>
-                  <label className="mb-1.5 block text-xs font-semibold" htmlFor="rua">
-                    Rua
+                  <label className="mb-1.5 block text-xs font-semibold" htmlFor="input-rua">
+                    Rua / Avenida <span className="text-destructive">*</span>
                   </label>
                   <input
-                    id="rua"
+                    id="input-rua"
                     value={form.street}
                     onChange={(e) => set("street", e.target.value)}
-                    placeholder="Rua / Avenida"
-                    className={fieldClass}
+                    onKeyDown={(e) => handleKeyDown(e, "input-num")}
+                    enterKeyHint="next"
+                    autoComplete="street-address"
+                    placeholder="Nome da sua rua"
+                    className={getFieldClass("street")}
                   />
                   {errors["street"] ? (
                     <p className="mt-1 text-xs text-destructive">{errors["street"]}</p>
                   ) : null}
                 </div>
                 <div>
-                  <label className="mb-1.5 block text-xs font-semibold" htmlFor="num">
-                    Número
+                  <label className="mb-1.5 block text-xs font-semibold" htmlFor="input-num">
+                    Número <span className="text-destructive">*</span>
                   </label>
                   <input
-                    id="num"
+                    id="input-num"
                     value={form.number}
                     onChange={(e) => set("number", e.target.value)}
+                    onKeyDown={(e) => handleKeyDown(e, "input-bairro")}
+                    enterKeyHint="next"
                     placeholder="123"
-                    className={fieldClass}
+                    className={getFieldClass("number")}
                   />
                   {errors["number"] ? (
                     <p className="mt-1 text-xs text-destructive">{errors["number"]}</p>
@@ -234,15 +281,17 @@ export function CheckoutSheet({ open, onClose, cart, notes, onSuccess }: Props) 
               </div>
 
               <div>
-                <label className="mb-1.5 block text-xs font-semibold" htmlFor="bairro">
-                  Bairro
+                <label className="mb-1.5 block text-xs font-semibold" htmlFor="input-bairro">
+                  Bairro <span className="text-destructive">*</span>
                 </label>
                 <input
-                  id="bairro"
+                  id="input-bairro"
                   value={form.neighborhood}
                   onChange={(e) => set("neighborhood", e.target.value)}
-                  placeholder="Centro"
-                  className={fieldClass}
+                  onKeyDown={(e) => handleKeyDown(e, "input-complement")}
+                  enterKeyHint="next"
+                  placeholder="Ex: Centro"
+                  className={getFieldClass("neighborhood")}
                 />
                 {errors["neighborhood"] ? (
                   <p className="mt-1 text-xs text-destructive">{errors["neighborhood"]}</p>
@@ -250,20 +299,38 @@ export function CheckoutSheet({ open, onClose, cart, notes, onSuccess }: Props) 
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <input
-                  value={form.complement}
-                  onChange={(e) => set("complement", e.target.value)}
-                  placeholder="Complemento"
-                  aria-label="Complemento"
-                  className={fieldClass}
-                />
-                <input
-                  value={form.reference}
-                  onChange={(e) => set("reference", e.target.value)}
-                  placeholder="Ponto de referência"
-                  aria-label="Ponto de referência"
-                  className={fieldClass}
-                />
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold" htmlFor="input-complement">
+                    Complemento
+                  </label>
+                  <input
+                    id="input-complement"
+                    value={form.complement}
+                    onChange={(e) => set("complement", e.target.value)}
+                    onKeyDown={(e) => handleKeyDown(e, "input-reference")}
+                    enterKeyHint="next"
+                    placeholder="Apto, Bloco..."
+                    aria-label="Complemento"
+                    className={fieldClass}
+                  />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold" htmlFor="input-reference">
+                    Ponto de Referência
+                  </label>
+                  <input
+                    id="input-reference"
+                    value={form.reference}
+                    onChange={(e) => set("reference", e.target.value)}
+                    onKeyDown={(e) =>
+                      handleKeyDown(e, payment === "dinheiro" ? "input-changeFor" : undefined)
+                    }
+                    enterKeyHint={payment === "dinheiro" ? "next" : "done"}
+                    placeholder="Próximo ao mercadinho"
+                    aria-label="Ponto de referência"
+                    className={fieldClass}
+                  />
+                </div>
               </div>
 
               <div>
@@ -285,28 +352,39 @@ export function CheckoutSheet({ open, onClose, cart, notes, onSuccess }: Props) 
                   ))}
                 </div>
                 {payment === "dinheiro" ? (
-                  <input
-                    value={form.changeFor}
-                    onChange={(e) => set("changeFor", onlyDigits(e.target.value))}
-                    inputMode="numeric"
-                    placeholder="Troco para quanto? Ex: 100"
-                    aria-label="Troco para"
-                    className={`${fieldClass} mt-3`}
-                  />
+                  <div className="mt-3">
+                    <label className="mb-1.5 block text-xs font-semibold" htmlFor="input-changeFor">
+                      Troco para quanto?
+                    </label>
+                    <input
+                      id="input-changeFor"
+                      value={form.changeFor}
+                      onChange={(e) => set("changeFor", onlyDigits(e.target.value))}
+                      onKeyDown={(e) => handleKeyDown(e)}
+                      enterKeyHint="done"
+                      inputMode="numeric"
+                      placeholder="Ex: 50 ou 100"
+                      aria-label="Troco para"
+                      className={fieldClass}
+                    />
+                  </div>
                 ) : null}
               </div>
             </>
           ) : (
             <div>
-              <label className="mb-1.5 block text-xs font-semibold" htmlFor="mesa">
-                Número da mesa
+              <label className="mb-1.5 block text-xs font-semibold" htmlFor="input-mesa">
+                Número da mesa <span className="text-destructive">*</span>
               </label>
               <input
-                id="mesa"
+                id="input-mesa"
                 value={form.tableNumber}
-                onChange={(e) => set("tableNumber", e.target.value)}
+                onChange={(e) => set("tableNumber", onlyDigits(e.target.value))}
+                onKeyDown={(e) => handleKeyDown(e)}
+                enterKeyHint="done"
+                inputMode="numeric"
                 placeholder="Ex: 12"
-                className={fieldClass}
+                className={getFieldClass("tableNumber")}
               />
               {errors["tableNumber"] ? (
                 <p className="mt-1 text-xs text-destructive">{errors["tableNumber"]}</p>

@@ -13,6 +13,7 @@ import { ProductSheet } from "@/components/menu/ProductSheet";
 import { CartSheet } from "@/components/menu/CartSheet";
 import { CheckoutSheet } from "@/components/menu/CheckoutSheet";
 import { SuccessOverlay } from "@/components/menu/SuccessOverlay";
+import { DynamicHeroBanner } from "@/components/menu/DynamicHeroBanner";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -146,22 +147,7 @@ function MenuPage() {
         </div>
       </header>
 
-      <section className="bg-brasa relative mx-4 mt-4 flex h-36 items-center overflow-hidden rounded-2xl px-5 text-primary-foreground shadow-brand">
-        <Pizza className="absolute -bottom-6 -right-6 size-40 opacity-15" />
-        <div className="relative">
-          <span className="rounded-full bg-primary-foreground/20 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider backdrop-blur">
-            Forno a lenha
-          </span>
-          <h2 className="mt-2 font-display text-xl font-bold leading-tight">
-            Pizzas artesanais
-            <br />
-            entregues quentinhas
-          </h2>
-          <p className="mt-1 text-xs opacity-90">
-            Pedido mínimo {brl(systemSettings.minOrder)} • entrega {brl(systemSettings.deliveryFee)}
-          </p>
-        </div>
-      </section>
+      <DynamicHeroBanner />
 
       <div className="px-4 pt-4">
         <div className="flex items-center gap-2.5 rounded-full border border-border bg-card px-4 py-3 transition-colors focus-within:border-primary">
