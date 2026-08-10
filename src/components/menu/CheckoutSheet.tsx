@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Bike, Loader2, Store } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation } from "@tanstack/react-query";
@@ -7,6 +7,7 @@ import type { CartLine } from "@/lib/menu";
 import { cartSubtotal } from "@/lib/menu";
 import { brl, isValidPhone, maskPhone, onlyDigits } from "@/lib/format";
 import { RESTAURANT } from "@/lib/config";
+import { useSystemSettings } from "@/lib/settings";
 import { placeOrder } from "@/lib/orders.functions";
 import { BottomSheet } from "./BottomSheet";
 
@@ -21,16 +22,11 @@ type Props = {
 type OrderType = "delivery" | "local";
 type Payment = "pix" | "dinheiro" | "cartao";
 
-const paymentOptions: { value: Payment; label: string }[] = [
-  { value: "pix", label: "Pix" },
-  { value: "dinheiro", label: "Dinheiro" },
-  { value: "cartao", label: "Cartão na entrega" },
-];
-
 const fieldClass =
   "w-full rounded-xl border border-border bg-muted px-3 py-3 text-sm outline-none transition-colors focus:border-primary focus:bg-card";
 
 export function CheckoutSheet({ open, onClose, cart, notes, onSuccess }: Props) {
+  const systemSettings = useSystemSettings();
   const [orderType, setOrderType] = useState<OrderType>("delivery");
   const [form, setForm] = useState({
     customerName: "",
@@ -46,9 +42,25 @@ export function CheckoutSheet({ open, onClose, cart, notes, onSuccess }: Props) 
   const [payment, setPayment] = useState<Payment>("pix");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  const paymentOptions = useMemo(() => {
+    const list: { value: Payment; label: string }[] = [];
+    if (systemSettings.paymentMethods?.pix ?? true) list.push({ value: "pix", label: "Pix" });
+    if (systemSettings.paymentMethods?.dinheiro ?? true)
+      list.push({ value: "dinheiro", label: "Dinheiro" });
+    if (systemSettings.paymentMethods?.cartao ?? true)
+      list.push({ value: "cartao", label: "Cartão na entrega" });
+    return list.length > 0
+      ? list
+      : [
+          { value: "pix" as Payment, label: "Pix" },
+          { value: "dinheiro" as Payment, label: "Dinheiro" },
+        ];
+  }, [systemSettings]);
+
   const submit = useServerFn(placeOrder);
   const subtotal = cartSubtotal(cart);
-  const deliveryFee = orderType === "delivery" ? RESTAURANT.deliveryFee : 0;
+  const activeDeliveryFee = systemSettings.deliveryFee ?? RESTAURANT.deliveryFee;
+  const deliveryFee = orderType === "delivery" ? activeDeliveryFee : 0;
   const total = subtotal + deliveryFee;
 
   const mutation = useMutation({

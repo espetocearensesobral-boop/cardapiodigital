@@ -3,7 +3,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Pizza, Search, ShoppingBag, Settings } from "lucide-react";
 import { toast } from "sonner";
-import { CATEGORY_EMOJI, CATEGORY_LABELS, RESTAURANT } from "@/lib/config";
+import { RESTAURANT } from "@/lib/config";
+import { useSystemSettings, useCategories } from "@/lib/settings";
 import { brl } from "@/lib/format";
 import { cartSubtotal, menuQueryOptions, type MenuItem } from "@/lib/menu";
 import { useCart } from "@/hooks/useCart";
@@ -41,6 +42,8 @@ type SuccessState = { code: string; total: number; whatsappUrl: string } | null;
 function MenuPage() {
   const { data: menu } = useSuspenseQuery(menuQueryOptions);
   const { cart, addItem, changeQty, removeLine, clear } = useCart();
+  const systemSettings = useSystemSettings();
+  const catList = useCategories();
 
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("all");
@@ -51,7 +54,15 @@ function MenuPage() {
   const [notes, setNotes] = useState("");
   const [success, setSuccess] = useState<SuccessState>(null);
 
-  const categories = useMemo(() => {
+  const categoryMap = useMemo(() => {
+    const map = new Map<string, { label: string; emoji: string }>();
+    for (const c of catList) {
+      map.set(c.id, { label: c.label, emoji: c.emoji });
+    }
+    return map;
+  }, [catList]);
+
+  const categoryKeys = useMemo(() => {
     const unique: string[] = [];
     for (const item of menu) if (!unique.includes(item.category)) unique.push(item.category);
     return ["all", ...unique];
@@ -99,7 +110,9 @@ function MenuPage() {
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5">
-              <h1 className="font-display text-base font-semibold">{RESTAURANT.name}</h1>
+              <h1 className="font-display text-base font-semibold">
+                {systemSettings.name || RESTAURANT.name}
+              </h1>
               <Link
                 to="/admin"
                 className="text-muted-foreground hover:text-foreground transition-colors"
@@ -111,7 +124,7 @@ function MenuPage() {
             </div>
             <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <span className="inline-block size-1.5 rounded-full bg-success" />
-              Aberto • entrega em ~40 min
+              Aberto • entrega das {systemSettings.openHour}h às {systemSettings.closeHour}h
             </p>
           </div>
           <button
@@ -142,7 +155,7 @@ function MenuPage() {
             entregues quentinhas
           </h2>
           <p className="mt-1 text-xs opacity-90">
-            Pedido mínimo {brl(RESTAURANT.minOrder)} • entrega {brl(RESTAURANT.deliveryFee)}
+            Pedido mínimo {brl(systemSettings.minOrder)} • entrega {brl(systemSettings.deliveryFee)}
           </p>
         </div>
       </section>
@@ -162,21 +175,27 @@ function MenuPage() {
 
       <nav className="sticky top-[76px] z-20 bg-background/95 px-4 py-3 backdrop-blur">
         <div className="no-scrollbar flex gap-2 overflow-x-auto">
-          {categories.map((key) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => setCategory(key)}
-              className={`flex shrink-0 items-center gap-1.5 rounded-full border-2 px-4 py-2 text-[13px] font-medium transition-colors ${
-                category === key
-                  ? "border-primary bg-primary text-primary-foreground shadow-brand"
-                  : "border-border bg-card text-muted-foreground hover:border-primary hover:text-primary"
-              }`}
-            >
-              <span>{CATEGORY_EMOJI[key] ?? "🍽"}</span>
-              {key === "all" ? "Todos" : (CATEGORY_LABELS[key] ?? key)}
-            </button>
-          ))}
+          {categoryKeys.map((key) => {
+            const info = categoryMap.get(key);
+            const label = key === "all" ? "Todos" : info?.label || key;
+            const emoji = key === "all" ? "🍕" : info?.emoji || "🍕";
+
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setCategory(key)}
+                className={`flex shrink-0 items-center gap-1.5 rounded-full border-2 px-4 py-2 text-[13px] font-medium transition-colors ${
+                  category === key
+                    ? "border-primary bg-primary text-primary-foreground shadow-brand"
+                    : "border-border bg-card text-muted-foreground hover:border-primary hover:text-primary"
+                }`}
+              >
+                <span>{emoji}</span>
+                {label}
+              </button>
+            );
+          })}
         </div>
       </nav>
 
@@ -191,7 +210,7 @@ function MenuPage() {
           grouped.map(([key, items]) => (
             <section key={key} className="animate-slide-up">
               <h2 className="px-1 pb-2 pt-4 font-display text-lg font-semibold">
-                {CATEGORY_LABELS[key] ?? key}
+                {categoryMap.get(key)?.label || key}
               </h2>
               <div className="grid grid-cols-2 gap-3">
                 {items.map((item) => (
