@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useSuspenseQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useSuspenseQuery, useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import {
   Plus,
   Pencil,
@@ -16,7 +16,6 @@ import {
   RefreshCw,
   FileText,
 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { menuQueryOptions, type MenuItem, type Addon } from "@/lib/menu";
@@ -30,7 +29,6 @@ import {
   useGlobalAddons,
   saveGlobalAddons,
   type SystemSettings,
-  type CategoryItem,
   type GlobalAddon,
 } from "@/lib/settings";
 import { Button } from "@/components/ui/button";
@@ -110,17 +108,16 @@ function AdminPage() {
   // Modals state
   const [editingItem, setEditingItem] = useState<Partial<MenuItem> | null>(null);
   const [isItemDialogOpen, setIsItemDialogOpen] = useState(false);
-
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
   const [newCatLabel, setNewCatLabel] = useState("");
   const [newCatEmoji, setNewCatEmoji] = useState("🍕");
-
   const [isAddonDialogOpen, setIsAddonDialogOpen] = useState(false);
   const [newAddonName, setNewAddonName] = useState("");
   const [newAddonPrice, setNewAddonPrice] = useState<number | "">("");
 
   // Orders Cloud Database Query
   const [selectedOrderDetails, setSelectedOrderDetails] = useState<DbOrder | null>(null);
+
   const {
     data: cloudOrders = [],
     isLoading: isLoadingOrders,
@@ -132,6 +129,7 @@ function AdminPage() {
         .from("orders")
         .select("*")
         .order("created_at", { ascending: false });
+
       if (error) {
         console.warn("Could not load cloud orders:", error);
         return [];
@@ -213,7 +211,6 @@ function AdminPage() {
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "")
       .replace(/[^a-z0-9]/g, "-");
-
     const updated = [...categories, { id: slug, label: newCatLabel.trim(), emoji: newCatEmoji }];
     saveCategories(updated);
     setNewCatLabel("");
@@ -268,14 +265,16 @@ function AdminPage() {
         <div className="flex items-center gap-3">
           <Link
             to="/"
-            className="flex size-10 items-center justify-center rounded-xl bg-card border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shrink-0"
+            className="flex size-11 items-center justify-center rounded-xl bg-card border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shrink-0"
             title="Voltar ao Cardápio"
           >
             <ArrowLeft className="size-5" />
           </Link>
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Painel Administrativo</h1>
-            <p className="text-xs sm:text-sm text-muted-foreground">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight break-words">
+              Painel Administrativo
+            </h1>
+            <p className="text-xs sm:text-sm text-muted-foreground break-words">
               Gerencie produtos, categorias, adicionais e configurações
             </p>
           </div>
@@ -286,21 +285,24 @@ function AdminPage() {
         <TabsList className="mb-4 sm:mb-6 flex w-full overflow-x-auto border bg-card p-1 rounded-xl shadow-xs gap-1">
           <TabsTrigger
             value="produtos"
-            className="flex-1 min-w-[100px] gap-1.5 text-xs sm:text-sm py-2"
+            className="flex-1 min-w-[100px] gap-1.5 text-xs sm:text-sm py-2.5"
           >
-            <Package className="size-4 shrink-0" /> Produtos
+            <Package className="size-4 shrink-0" />
+            <span className="truncate">Produtos</span>
           </TabsTrigger>
           <TabsTrigger
             value="pedidos"
-            className="flex-1 min-w-[120px] gap-1.5 text-xs sm:text-sm py-2"
+            className="flex-1 min-w-[120px] gap-1.5 text-xs sm:text-sm py-2.5"
           >
-            <ShoppingBag className="size-4 shrink-0" /> Pedidos Nuvem
+            <ShoppingBag className="size-4 shrink-0" />
+            <span className="truncate">Pedidos</span>
           </TabsTrigger>
           <TabsTrigger
             value="sistema"
-            className="flex-1 min-w-[110px] gap-1.5 text-xs sm:text-sm py-2"
+            className="flex-1 min-w-[110px] gap-1.5 text-xs sm:text-sm py-2.5"
           >
-            <SettingsIcon className="size-4 shrink-0" /> Painel Sistema
+            <SettingsIcon className="size-4 shrink-0" />
+            <span className="truncate">Sistema</span>
           </TabsTrigger>
         </TabsList>
 
@@ -312,22 +314,22 @@ function AdminPage() {
                 variant="outline"
                 size="sm"
                 onClick={() => setIsCategoryDialogOpen(true)}
-                className="gap-1.5 text-xs h-9"
+                className="gap-1.5 text-xs h-11 sm:h-9 flex-1 sm:flex-none"
               >
-                <Layers className="size-3.5" /> Categorias ({categories.length})
+                <Layers className="size-4" /> Categorias ({categories.length})
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setIsAddonDialogOpen(true)}
-                className="gap-1.5 text-xs h-9"
+                className="gap-1.5 text-xs h-11 sm:h-9 flex-1 sm:flex-none"
               >
-                <Sparkles className="size-3.5" /> Adicionais ({globalAddons.length})
+                <Sparkles className="size-4" /> Adicionais ({globalAddons.length})
               </Button>
             </div>
             <Button
               onClick={handleAddItem}
-              className="gap-2 h-9 text-xs sm:text-sm w-full sm:w-auto"
+              className="gap-2 h-11 sm:h-9 text-xs sm:text-sm w-full sm:w-auto font-semibold"
             >
               <Plus className="size-4" /> Novo Produto
             </Button>
@@ -377,7 +379,7 @@ function AdminPage() {
                       </div>
 
                       {item.description && (
-                        <p className="text-xs text-muted-foreground line-clamp-2 mt-1.5">
+                        <p className="text-xs text-muted-foreground line-clamp-2 mt-1.5 leading-relaxed break-words">
                           {item.description}
                         </p>
                       )}
@@ -402,14 +404,14 @@ function AdminPage() {
                         variant="ghost"
                         size="sm"
                         onClick={() => handleEditItem(item)}
-                        className="h-8 gap-1 px-2.5 text-xs"
+                        className="h-9 gap-1 px-2.5 text-xs"
                       >
                         <Pencil className="size-3.5" /> Editar
                       </Button>
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-8 gap-1 px-2.5 text-xs text-destructive hover:text-destructive"
+                        className="h-9 gap-1 px-2.5 text-xs text-destructive hover:text-destructive"
                         onClick={() => handleDeleteItem(item.id)}
                       >
                         <Trash2 className="size-3.5" /> Excluir
@@ -426,7 +428,7 @@ function AdminPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[70px]">Foto</TableHead>
+                  <TableHead className="w-[60px]">Foto</TableHead>
                   <TableHead>Nome</TableHead>
                   <TableHead>Categoria</TableHead>
                   <TableHead>Preço</TableHead>
@@ -439,6 +441,7 @@ function AdminPage() {
                 {menu.map((item) => {
                   const categoryLabel =
                     categories.find((c) => c.id === item.category)?.label || item.category;
+
                   return (
                     <TableRow key={item.id}>
                       <TableCell>
@@ -516,7 +519,7 @@ function AdminPage() {
               variant="outline"
               size="sm"
               onClick={() => refetchOrders()}
-              className="gap-2 h-9 text-xs sm:text-sm shrink-0"
+              className="gap-2 h-11 sm:h-9 text-xs sm:text-sm shrink-0 w-full sm:w-auto"
               disabled={isLoadingOrders}
             >
               <RefreshCw className={`size-3.5 ${isLoadingOrders ? "animate-spin" : ""}`} />
@@ -547,12 +550,12 @@ function AdminPage() {
                     </span>
                   </div>
 
-                  <div className="flex items-start justify-between text-xs">
-                    <div>
-                      <div className="font-semibold text-sm">{ord.customer_name}</div>
-                      <div className="text-muted-foreground">{ord.phone}</div>
+                  <div className="flex items-start justify-between text-xs gap-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="font-semibold text-sm truncate">{ord.customer_name}</div>
+                      <div className="text-muted-foreground truncate">{ord.phone}</div>
                     </div>
-                    <div className="text-right font-bold text-sm text-foreground">
+                    <div className="text-right font-bold text-sm text-foreground shrink-0">
                       {brl(Number(ord.total))}
                     </div>
                   </div>
@@ -571,7 +574,7 @@ function AdminPage() {
                       variant="outline"
                       size="sm"
                       onClick={() => setSelectedOrderDetails(ord)}
-                      className="h-8 text-xs gap-1.5 ml-auto"
+                      className="h-9 text-xs gap-1.5 w-full sm:w-auto"
                     >
                       <FileText className="size-3.5" /> Ver Detalhes
                     </Button>
@@ -627,7 +630,7 @@ function AdminPage() {
                           variant="outline"
                           size="sm"
                           onClick={() => setSelectedOrderDetails(ord)}
-                          className="gap-1.5"
+                          className="gap-2"
                         >
                           <FileText className="size-4" /> Detalhes
                         </Button>
@@ -644,54 +647,58 @@ function AdminPage() {
         <TabsContent value="sistema" className="space-y-6">
           <div className="grid gap-6 md:grid-cols-2">
             {/* Dados do Restaurante */}
-            <div className="rounded-xl border bg-card p-5 space-y-4 shadow-sm">
-              <h3 className="font-semibold text-lg flex items-center gap-2">
+            <div className="rounded-xl border bg-card p-4 sm:p-5 space-y-4 shadow-xs">
+              <h3 className="font-semibold text-base sm:text-lg flex items-center gap-2">
                 🏠 Identidade & Contato
               </h3>
               <div className="space-y-3">
-                <div>
+                <div className="space-y-1.5">
                   <Label htmlFor="sys-name">Nome do Restaurante</Label>
                   <Input
                     id="sys-name"
                     value={sysForm.name}
                     onChange={(e) => setSysForm({ ...sysForm, name: e.target.value })}
+                    className="h-11"
                   />
                 </div>
-                <div>
+                <div className="space-y-1.5">
                   <Label htmlFor="sys-tagline">Slogan / Subtítulo</Label>
                   <Input
                     id="sys-tagline"
                     value={sysForm.tagline}
                     onChange={(e) => setSysForm({ ...sysForm, tagline: e.target.value })}
+                    className="h-11"
                   />
                 </div>
-                <div>
+                <div className="space-y-1.5">
                   <Label htmlFor="sys-whatsapp">WhatsApp Internacional (Ex: 5588981764990)</Label>
                   <Input
                     id="sys-whatsapp"
                     value={sysForm.whatsapp}
                     onChange={(e) => setSysForm({ ...sysForm, whatsapp: e.target.value })}
+                    className="h-11"
                   />
                 </div>
-                <div>
+                <div className="space-y-1.5">
                   <Label htmlFor="sys-whatsapp-display">WhatsApp Exibição</Label>
                   <Input
                     id="sys-whatsapp-display"
                     value={sysForm.whatsappDisplay}
                     onChange={(e) => setSysForm({ ...sysForm, whatsappDisplay: e.target.value })}
+                    className="h-11"
                   />
                 </div>
               </div>
             </div>
 
             {/* Taxas & Horários */}
-            <div className="rounded-xl border bg-card p-5 space-y-4 shadow-sm">
-              <h3 className="font-semibold text-lg flex items-center gap-2">
+            <div className="rounded-xl border bg-card p-4 sm:p-5 space-y-4 shadow-xs">
+              <h3 className="font-semibold text-base sm:text-lg flex items-center gap-2">
                 🚚 Entrega & Horários
               </h3>
               <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
                     <Label htmlFor="sys-fee">Taxa de Entrega (R$)</Label>
                     <Input
                       id="sys-fee"
@@ -701,9 +708,10 @@ function AdminPage() {
                       onChange={(e) =>
                         setSysForm({ ...sysForm, deliveryFee: Number(e.target.value) })
                       }
+                      className="h-11"
                     />
                   </div>
-                  <div>
+                  <div className="space-y-1.5">
                     <Label htmlFor="sys-min">Pedido Mínimo (R$)</Label>
                     <Input
                       id="sys-min"
@@ -711,12 +719,12 @@ function AdminPage() {
                       step="1"
                       value={sysForm.minOrder}
                       onChange={(e) => setSysForm({ ...sysForm, minOrder: Number(e.target.value) })}
+                      className="h-11"
                     />
                   </div>
                 </div>
-
-                <div className="grid grid-cols-2 gap-3 pt-2">
-                  <div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
                     <Label htmlFor="sys-open">Abertura (Hora 0-23)</Label>
                     <Input
                       id="sys-open"
@@ -725,9 +733,10 @@ function AdminPage() {
                       max={23}
                       value={sysForm.openHour}
                       onChange={(e) => setSysForm({ ...sysForm, openHour: Number(e.target.value) })}
+                      className="h-11"
                     />
                   </div>
-                  <div>
+                  <div className="space-y-1.5">
                     <Label htmlFor="sys-close">Fechamento (Hora 0-23)</Label>
                     <Input
                       id="sys-close"
@@ -738,6 +747,7 @@ function AdminPage() {
                       onChange={(e) =>
                         setSysForm({ ...sysForm, closeHour: Number(e.target.value) })
                       }
+                      className="h-11"
                     />
                   </div>
                 </div>
@@ -745,13 +755,16 @@ function AdminPage() {
             </div>
 
             {/* Formas de Pagamento */}
-            <div className="rounded-xl border bg-card p-5 space-y-4 shadow-sm md:col-span-2">
-              <h3 className="font-semibold text-lg flex items-center gap-2">
+            <div className="rounded-xl border bg-card p-4 sm:p-5 space-y-4 shadow-xs md:col-span-2">
+              <h3 className="font-semibold text-base sm:text-lg flex items-center gap-2">
                 💳 Formas de Pagamento Aceitas
               </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
-                <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/40">
-                  <Label htmlFor="pay-pix" className="cursor-pointer font-medium">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="flex items-center justify-between gap-3 p-3.5 rounded-lg border bg-muted/40">
+                  <Label
+                    htmlFor="pay-pix"
+                    className="cursor-pointer text-xs sm:text-sm font-medium"
+                  >
                     Pix Online / Entrega
                   </Label>
                   <Switch
@@ -765,8 +778,11 @@ function AdminPage() {
                     }
                   />
                 </div>
-                <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/40">
-                  <Label htmlFor="pay-dinheiro" className="cursor-pointer font-medium">
+                <div className="flex items-center justify-between gap-3 p-3.5 rounded-lg border bg-muted/40">
+                  <Label
+                    htmlFor="pay-dinheiro"
+                    className="cursor-pointer text-xs sm:text-sm font-medium"
+                  >
                     Dinheiro em Espécie
                   </Label>
                   <Switch
@@ -780,8 +796,11 @@ function AdminPage() {
                     }
                   />
                 </div>
-                <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/40">
-                  <Label htmlFor="pay-cartao" className="cursor-pointer font-medium">
+                <div className="flex items-center justify-between gap-3 p-3.5 rounded-lg border bg-muted/40">
+                  <Label
+                    htmlFor="pay-cartao"
+                    className="cursor-pointer text-xs sm:text-sm font-medium"
+                  >
                     Cartão na Entrega
                   </Label>
                   <Switch
@@ -799,8 +818,12 @@ function AdminPage() {
             </div>
           </div>
 
-          <div className="flex justify-end pt-4">
-            <Button onClick={handleSaveSystemSettings} size="lg" className="gap-2">
+          <div className="flex justify-end pt-2">
+            <Button
+              onClick={handleSaveSystemSettings}
+              size="lg"
+              className="gap-2 h-11 w-full sm:w-auto font-semibold"
+            >
               <Save className="size-5" /> Salvar Configurações
             </Button>
           </div>
@@ -813,7 +836,6 @@ function AdminPage() {
           <DialogHeader>
             <DialogTitle>{editingItem?.id ? "Editar Produto" : "Novo Produto"}</DialogTitle>
           </DialogHeader>
-
           <div className="grid gap-4 py-2">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div className="space-y-1.5">
@@ -823,6 +845,7 @@ function AdminPage() {
                   placeholder="Ex: Pizza Calabresa"
                   value={editingItem?.name || ""}
                   onChange={(e) => setEditingItem((prev) => ({ ...prev, name: e.target.value }))}
+                  className="h-11"
                 />
               </div>
               <div className="space-y-1.5">
@@ -833,7 +856,7 @@ function AdminPage() {
                     setEditingItem((prev) => ({ ...prev, category: value }))
                   }
                 >
-                  <SelectTrigger id="item-category">
+                  <SelectTrigger id="item-category" className="h-11">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -858,6 +881,7 @@ function AdminPage() {
                   onChange={(e) =>
                     setEditingItem((prev) => ({ ...prev, price: Number(e.target.value) }))
                   }
+                  className="h-11"
                 />
               </div>
               <div className="space-y-1.5">
@@ -872,6 +896,7 @@ function AdminPage() {
                       badge: e.target.value || null,
                     }))
                   }
+                  className="h-11"
                 />
               </div>
               <div className="flex items-center space-x-2 pt-2 sm:pt-7">
@@ -907,10 +932,10 @@ function AdminPage() {
                 placeholder="https://..."
                 value={editingItem?.image_url || ""}
                 onChange={(e) => setEditingItem((prev) => ({ ...prev, image_url: e.target.value }))}
+                className="h-11"
               />
             </div>
 
-            {/* Adicionais & Bordas vinculadas */}
             <div className="space-y-2 border-t pt-3">
               <Label className="text-sm font-semibold">
                 Adicionais & Bordas Vinculadas a este Produto
@@ -919,7 +944,6 @@ function AdminPage() {
                 {globalAddons.map((ga) => {
                   const currentAddons: Addon[] = editingItem?.addons || [];
                   const isChecked = currentAddons.some((a) => a.name === ga.name);
-
                   return (
                     <label
                       key={ga.id}
@@ -953,14 +977,14 @@ function AdminPage() {
             <Button
               variant="outline"
               onClick={() => setIsItemDialogOpen(false)}
-              className="w-full sm:w-auto"
+              className="w-full sm:w-auto h-11 sm:h-9"
             >
               Cancelar
             </Button>
             <Button
               onClick={() => editingItem && saveMutation.mutate(editingItem)}
               disabled={saveMutation.isPending}
-              className="w-full sm:w-auto"
+              className="w-full sm:w-auto h-11 sm:h-9 font-semibold"
             >
               {saveMutation.isPending ? "Salvando..." : "Salvar Produto"}
             </Button>
@@ -981,16 +1005,16 @@ function AdminPage() {
                 placeholder="Nova Categoria (Ex: Especiais)"
                 value={newCatLabel}
                 onChange={(e) => setNewCatLabel(e.target.value)}
-                className="flex-1"
+                className="flex-1 h-11 sm:h-9"
               />
               <div className="flex gap-2">
                 <Input
                   placeholder="Emoji"
-                  className="w-20 text-center"
+                  className="w-20 text-center h-11 sm:h-9"
                   value={newCatEmoji}
                   onChange={(e) => setNewCatEmoji(e.target.value)}
                 />
-                <Button onClick={handleAddCategory} className="w-full sm:w-auto">
+                <Button onClick={handleAddCategory} className="w-full sm:w-auto h-11 sm:h-9">
                   Adicionar
                 </Button>
               </div>
@@ -1020,7 +1044,10 @@ function AdminPage() {
           </div>
 
           <DialogFooter>
-            <Button onClick={() => setIsCategoryDialogOpen(false)} className="w-full sm:w-auto">
+            <Button
+              onClick={() => setIsCategoryDialogOpen(false)}
+              className="w-full sm:w-auto h-11 sm:h-9"
+            >
               Concluir
             </Button>
           </DialogFooter>
@@ -1040,20 +1067,20 @@ function AdminPage() {
                 placeholder="Nome (Ex: Borda de Catupiry)"
                 value={newAddonName}
                 onChange={(e) => setNewAddonName(e.target.value)}
-                className="flex-1"
+                className="flex-1 h-11 sm:h-9"
               />
               <div className="flex gap-2">
                 <Input
                   type="number"
                   step="0.5"
                   placeholder="Preço R$"
-                  className="w-28"
+                  className="w-28 h-11 sm:h-9"
                   value={newAddonPrice}
                   onChange={(e) =>
                     setNewAddonPrice(e.target.value === "" ? "" : Number(e.target.value))
                   }
                 />
-                <Button onClick={handleAddAddon} className="w-full sm:w-auto">
+                <Button onClick={handleAddAddon} className="w-full sm:w-auto h-11 sm:h-9">
                   Adicionar
                 </Button>
               </div>
@@ -1083,7 +1110,10 @@ function AdminPage() {
           </div>
 
           <DialogFooter>
-            <Button onClick={() => setIsAddonDialogOpen(false)} className="w-full sm:w-auto">
+            <Button
+              onClick={() => setIsAddonDialogOpen(false)}
+              className="w-full sm:w-auto h-11 sm:h-9"
+            >
               Concluir
             </Button>
           </DialogFooter>
@@ -1152,7 +1182,7 @@ function AdminPage() {
                         key={idx}
                         className="border-b last:border-0 pb-2 last:pb-0 text-xs space-y-0.5"
                       >
-                        <div className="flex justify-between font-semibold">
+                        <div className="flex justify-between gap-2 font-semibold">
                           <span>
                             {it.qty}x {it.name}
                           </span>
@@ -1179,7 +1209,7 @@ function AdminPage() {
                 </div>
               )}
 
-              <div className="space-y-1.5 border-t pt-3 text-xs">
+              <div className="space-y-1 border-t pt-3 text-xs">
                 <div className="flex justify-between text-muted-foreground">
                   <span>Subtotal:</span>
                   <span>{brl(Number(selectedOrderDetails.subtotal))}</span>
@@ -1209,7 +1239,10 @@ function AdminPage() {
           )}
 
           <DialogFooter>
-            <Button onClick={() => setSelectedOrderDetails(null)} className="w-full sm:w-auto">
+            <Button
+              onClick={() => setSelectedOrderDetails(null)}
+              className="w-full sm:w-auto h-11 sm:h-9"
+            >
               Fechar
             </Button>
           </DialogFooter>
