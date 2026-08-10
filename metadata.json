@@ -1,0 +1,6 @@
+{
+  "name": "La Bella Pizza",
+  "description": "Cardápio Digital e Delivery de Pizzas Artesanais",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
