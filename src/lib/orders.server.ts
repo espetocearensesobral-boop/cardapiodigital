@@ -45,66 +45,66 @@ export function buildWhatsappMessage(
   totals: { subtotal: number; deliveryFee: number; total: number },
   code: string,
 ) {
+  const dateStr = new Date().toLocaleDateString("pt-BR");
+  const timeStr = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+
   const lines: string[] = [];
-  lines.push(`🍕 *LA BELLA PIZZA — COMPROVANTE DE PEDIDO*`);
-  lines.push(`📋 *Código:* ${code}`);
-  lines.push(`⏰ *Data/Hora:* ${new Date().toLocaleString("pt-BR")}`);
-  lines.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  lines.push(`🍕 *LA BELLA PIZZA* 🧾`);
+  lines.push(`📦 *Pedido:* ${code} | 🗓️ ${dateStr} - ${timeStr}`);
+  lines.push("");
   lines.push(`👤 *CLIENTE:* ${input.customerName}`);
-  lines.push(`📞 *CONTATO:* ${input.phone}`);
-  lines.push(
-    `🛵 *TIPO DE PEDIDO:* ${input.orderType === "delivery" ? "Delivery / Entrega" : "Consumo / Retirada no Local"}`,
-  );
+  lines.push(`📞 *Contato:* ${input.phone}`);
 
   if (input.orderType === "delivery") {
-    lines.push("");
-    lines.push("📍 *ENDEREÇO DE ENTREGA:*");
-    lines.push(`• *Rua/Av:* ${input.street || "Não informado"}, Nº ${input.number || "S/N"}`);
-    if (input.complement) lines.push(`• *Complemento:* ${input.complement}`);
-    lines.push(`• *Bairro:* ${input.neighborhood || "Não informado"}`);
-    if (input.reference) lines.push(`• *Ponto de Ref:* ${input.reference}`);
+    const addressMain = `${input.street || "Endereço não informado"}, Nº ${input.number || "S/N"}${input.complement ? ` - ${input.complement}` : ""}`;
+    lines.push(`🛵 *ENTREGA:* ${addressMain} (Bairro: ${input.neighborhood || "Não informado"})`);
+    if (input.reference) {
+      lines.push(`📍 *Ponto de Ref:* ${input.reference}`);
+    }
   } else if (input.tableNumber) {
-    lines.push(`🍽 *MESA:* Nº ${input.tableNumber}`);
+    lines.push(`🍽️ *MESA:* Nº ${input.tableNumber}`);
   }
 
   lines.push("");
-  lines.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-  lines.push("🛒 *ITENS DO PEDIDO:*");
+  lines.push("➖➖➖➖➖➖➖➖➖➖");
+  lines.push("🛒 *ITENS DO PEDIDO*");
   lines.push("");
+
   for (const item of input.items) {
-    lines.push(`*${item.qty}x ${item.name}* — R$ ${money(item.unitPrice * item.qty)}`);
+    lines.push(`🍕 *${item.qty}x ${item.name}* — R$ ${money(item.unitPrice * item.qty)}`);
     if (item.addons && item.addons.length > 0) {
       lines.push(
-        `   ➕ *Adicionais/Bordas:* ${item.addons.map((a) => `${a.name} (+R$ ${money(a.price)})`).join(", ")}`,
+        `➕ *Adicionais:* ${item.addons.map((a) => `${a.name} (+R$ ${money(a.price)})`).join(", ")}`,
       );
     }
-    if (item.obs) lines.push(`   📝 *Obs:* ${item.obs}`);
+    if (item.obs) {
+      lines.push(`📝 *Obs:* ${item.obs}`);
+    }
   }
 
   if (input.notes) {
     lines.push("");
-    lines.push(`💬 *OBSERVAÇÕES GERAIS:* ${input.notes}`);
+    lines.push(`🗒️ *Obs Gerais:* ${input.notes}`);
   }
 
   lines.push("");
-  lines.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-  lines.push("💰 *RESUMO FINANCEIRO:*");
-  lines.push(`• Subtotal dos itens: R$ ${money(totals.subtotal)}`);
-  if (totals.deliveryFee > 0) {
-    lines.push(`• Taxa de entrega: R$ ${money(totals.deliveryFee)}`);
-  } else {
-    lines.push(`• Taxa de entrega: Grátis`);
+  lines.push("➖➖➖➖➖➖➖➖➖➖");
+  lines.push("💰 *RESUMO FINANCEIRO*");
+  lines.push(`🔹 Subtotal: R$ ${money(totals.subtotal)}`);
+  lines.push(
+    `🔹 Entrega: ${totals.deliveryFee > 0 ? `R$ ${money(totals.deliveryFee)}` : "Grátis"}`,
+  );
+  lines.push(
+    `💳 *Pagamento:* ${PAYMENT_LABEL[input.paymentMethod ?? "pix"] ?? input.paymentMethod}`,
+  );
+  if (input.changeFor) {
+    lines.push(`💵 *Troco para:* R$ ${input.changeFor}`);
   }
-  lines.push(
-    `💳 *Forma de Pagamento:* ${PAYMENT_LABEL[input.paymentMethod ?? "pix"] ?? input.paymentMethod}`,
-  );
-  if (input.changeFor) lines.push(`• Troco para: R$ ${input.changeFor}`);
+
   lines.push("");
-  lines.push(`🔥 *TOTAL DO PEDIDO: R$ ${money(totals.total)}*`);
-  lines.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-  lines.push(
-    "Obrigado pela preferência! Seu pedido foi registrado com sucesso em nosso banco de dados em nuvem. ❤️",
-  );
+  lines.push(`🟢 *TOTAL DO PEDIDO: R$ ${money(totals.total)}*`);
+  lines.push("➖➖➖➖➖➖➖➖➖➖");
+  lines.push("✅ _Obrigado pela preferência! Pedido registrado com sucesso._");
 
   return lines.join("\n");
 }
