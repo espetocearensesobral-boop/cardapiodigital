@@ -1,4 +1,4 @@
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { getDb } from "@/lib/db.server";
 
 export type SelectedAddonInput = {
   name: string;
@@ -87,19 +87,25 @@ function parseAddons(value: unknown): Addon[] {
 }
 
 async function getStoreSettings(): Promise<StoreSettingsSnapshot> {
-  if (!process.env["SUPABASE_URL"] || !process.env["SUPABASE_SERVICE_ROLE_KEY"]) {
-    throw new Error("O serviço de pedidos está temporariamente indisponível.");
-  }
+  const sql = getDb();
+  const rows = await sql<
+    Array<{
+      name: string;
+      whatsapp: string;
+      delivery_fee: number;
+      min_order: number;
+      accepting_orders: boolean;
+      payment_methods: unknown;
+    }>
+  >`
+    select name, whatsapp, delivery_fee, min_order, accepting_orders, payment_methods
+    from store_settings
+    where id = 1
+    limit 1
+  `;
+  const data = rows[0];
 
-  const { data, error } = await supabaseAdmin
-    .from("store_settings")
-    .select("name, whatsapp, delivery_fee, min_order, accepting_orders, payment_methods")
-    .eq("id", 1)
-    .single();
-
-  if (error || !data) {
-    throw new Error("As configurações do restaurante não estão disponíveis.");
-  }
+  if (!data) throw new Error("As configurações do restaurante não estão disponíveis.");
 
   const paymentMethods =
     typeof data.payment_methods === "object" &&
@@ -123,18 +129,25 @@ async function getStoreSettings(): Promise<StoreSettingsSnapshot> {
 }
 
 async function priceAndValidateItems(input: CheckoutInput) {
+  const sql = getDb();
   const ids = [...new Set(input.items.map((item) => item.id))];
-  const { data: menu, error } = await supabaseAdmin
-    .from("menu_items")
-    .select("id, name, price, available, addons")
-    .in("id", ids);
+  const menu: MenuRow[] = [];
 
-  if (error) throw new Error("Não foi possível validar o cardápio. Tente novamente.");
-  if (!menu || menu.length !== ids.length) {
+  for (const id of ids) {
+    const rows = await sql<MenuRow[]>`
+      select id, name, price, available, addons
+      from menu_items
+      where id = ${id}
+      limit 1
+    `;
+    if (rows[0]) menu.push(rows[0]);
+  }
+
+  if (menu.length !== ids.length) {
     throw new Error("Um ou mais produtos não estão mais disponíveis. Atualize o carrinho.");
   }
 
-  const menuById = new Map((menu as MenuRow[]).map((item) => [item.id, item]));
+  const menuById = new Map(menu.map((item) => [item.id, item]));
   const items: OrderItemInput[] = [];
 
   for (const selected of input.items) {
@@ -232,10 +245,10 @@ export function buildWhatsappMessage(
 }
 
 export async function createOrder(input: CheckoutInput) {
+  const sql = getDb();
   const settings = await getStoreSettings();
-  if (!settings.acceptingOrders) {
-    throw new Error("No momento não estamos aceitando novos pedidos.");
-  }
+  if (!settings.acceptingOrders) throw new Error("No momento não estamos aceitando novos pedidos.");
+
   const items = await priceAndValidateItems(input);
   const subtotal = items.reduce((sum, item) => sum + item.unitPrice * item.qty, 0);
   const deliveryFee = input.orderType === "delivery" ? settings.deliveryFee : 0;
@@ -253,56 +266,47 @@ export async function createOrder(input: CheckoutInput) {
   }
 
   const order: OrderInput = { ...input, items };
-  let savedCode = "";
-  let savedTotal = total;
-  let lastError: string | null = null;
+  const existing = await sql<Array<{ code: string; total: number }>>`
+    select code, total from orders where client_order_id = ${input.clientOrderId} limit 1
+  `;
 
-  for (let attempt = 0; attempt < 3; attempt += 1) {
-    const code = makeCode();
-    const { error } = await supabaseAdmin.from("orders").insert({
-      code,
-      client_order_id: input.clientOrderId,
-      customer_name: input.customerName,
-      phone: input.phone,
-      order_type: input.orderType,
-      street: input.street ?? null,
-      number: input.number ?? null,
-      complement: input.complement ?? null,
-      neighborhood: input.neighborhood ?? null,
-      reference: input.reference ?? null,
-      table_number: input.tableNumber ?? null,
-      payment_method: input.paymentMethod ?? null,
-      change_for: input.changeFor ?? null,
-      items,
-      notes: input.notes ?? null,
-      subtotal,
-      delivery_fee: deliveryFee,
-      total,
-    });
-
-    if (!error) {
-      savedCode = code;
-      break;
-    }
-
-    const { data: existing } = await supabaseAdmin
-      .from("orders")
-      .select("code, total")
-      .eq("client_order_id", input.clientOrderId)
-      .maybeSingle();
-    if (existing) {
-      savedCode = existing.code;
-      savedTotal = Number(existing.total);
-      break;
-    }
-
-    lastError = error.message;
-  }
+  let savedCode = existing[0]?.code ?? "";
+  let savedTotal = Number(existing[0]?.total ?? total);
 
   if (!savedCode) {
-    console.error("[Orders] Could not record order:", lastError);
-    throw new Error("Não foi possível registrar o pedido. Tente novamente.");
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      const code = makeCode();
+      try {
+        await sql`
+          insert into orders (
+            code, client_order_id, customer_name, phone, order_type,
+            street, number, complement, neighborhood, reference, table_number,
+            payment_method, change_for, items, notes, subtotal, delivery_fee, total, source
+          ) values (
+            ${code}, ${input.clientOrderId}, ${input.customerName}, ${input.phone}, ${input.orderType},
+            ${input.street ?? null}, ${input.number ?? null}, ${input.complement ?? null},
+            ${input.neighborhood ?? null}, ${input.reference ?? null}, ${input.tableNumber ?? null},
+            ${input.paymentMethod ?? null}, ${input.changeFor ?? null}, ${JSON.stringify(items)},
+            ${input.notes ?? null}, ${subtotal}, ${deliveryFee}, ${total}, 'web'
+          )
+        `;
+        savedCode = code;
+        break;
+      } catch (error) {
+        const duplicate = await sql<Array<{ code: string; total: number }>>`
+          select code, total from orders where client_order_id = ${input.clientOrderId} limit 1
+        `;
+        if (duplicate[0]) {
+          savedCode = duplicate[0].code;
+          savedTotal = Number(duplicate[0].total);
+          break;
+        }
+        if (attempt === 2) throw error;
+      }
+    }
   }
+
+  if (!savedCode) throw new Error("Não foi possível registrar o pedido. Tente novamente.");
 
   const message = buildWhatsappMessage(
     order,

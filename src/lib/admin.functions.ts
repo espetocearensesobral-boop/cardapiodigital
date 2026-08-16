@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
+import { getDb } from "@/lib/db.server";
+import { requireAdminSession } from "@/lib/admin-auth.server";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const addonSchema = z.object({
   name: z.string().trim().min(1).max(80),
@@ -57,166 +57,115 @@ const statusSchema = z.enum([
   "cancelado",
 ]);
 
-async function assertStaff(userId: string) {
-  const { data, error } = await supabaseAdmin
-    .from("staff_users")
-    .select("role")
-    .eq("user_id", userId)
-    .in("role", ["staff", "admin"])
-    .maybeSingle();
-
-  if (error || !data) {
-    throw new Error("Forbidden: acesso administrativo não autorizado.");
-  }
-
-  return data.role;
+function isUuid(value: string | undefined): value is string {
+  return Boolean(
+    value &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value),
+  );
 }
 
-export const adminListOrders = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    await assertStaff(context.userId);
-    const { data, error } = await supabaseAdmin
-      .from("orders")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(200);
-
-    if (error) throw new Error(`Não foi possível carregar os pedidos: ${error.message}`);
-    return data ?? [];
-  });
+export const adminListOrders = createServerFn({ method: "GET" }).handler(async () => {
+  requireAdminSession();
+  const sql = getDb();
+  return sql`
+    select * from orders
+    order by created_at desc
+    limit 200
+  `;
+});
 
 export const adminSaveMenuItem = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
   .validator((data: unknown) => menuItemSchema.parse(data))
-  .handler(async ({ context, data }) => {
-    await assertStaff(context.userId);
-    const { id, ...item } = data;
+  .handler(async ({ data }) => {
+    requireAdminSession();
+    const sql = getDb();
 
-    const isUuid =
-      typeof id === "string" &&
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
-
-    if (isUuid) {
-      const { data: updated, error } = await supabaseAdmin
-        .from("menu_items")
-        .update(item)
-        .eq("id", id)
-        .select()
-        .single();
-      if (error) throw new Error(`Não foi possível atualizar o produto: ${error.message}`);
-      return updated;
+    if (isUuid(data.id)) {
+      const itemId = data.id;
+      const rows = await sql`
+        update menu_items
+        set name = ${data.name}, description = ${data.description}, price = ${data.price},
+            category = ${data.category}, image_url = ${data.image_url}, badge = ${data.badge},
+            addons = ${JSON.stringify(data.addons)}, available = ${data.available}, sort_order = ${data.sort_order}
+        where id = ${itemId}::uuid
+        returning *
+      `;
+      if (!rows[0]) throw new Error("Produto não encontrado.");
+      return rows[0];
     }
 
-    const { data: created, error } = await supabaseAdmin
-      .from("menu_items")
-      .insert(item)
-      .select()
-      .single();
-    if (error) throw new Error(`Não foi possível criar o produto: ${error.message}`);
-    return created;
+    const rows = await sql`
+      insert into menu_items (name, description, price, category, image_url, badge, addons, available, sort_order)
+      values (${data.name}, ${data.description}, ${data.price}, ${data.category}, ${data.image_url},
+              ${data.badge}, ${JSON.stringify(data.addons)}, ${data.available}, ${data.sort_order})
+      returning *
+    `;
+    return rows[0];
   });
 
 export const adminDeleteMenuItem = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
   .validator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
-  .handler(async ({ context, data }) => {
-    await assertStaff(context.userId);
-    const { error } = await supabaseAdmin.from("menu_items").delete().eq("id", data.id);
-    if (error) throw new Error(`Não foi possível remover o produto: ${error.message}`);
+  .handler(async ({ data }) => {
+    requireAdminSession();
+    const sql = getDb();
+    await sql`delete from menu_items where id = ${data.id}::uuid`;
     return { success: true as const };
   });
 
-async function syncNormalizedCatalog(data: {
-  categories: Array<{ id: string; label: string; emoji: string }>;
-  globalAddons: Array<{ id: string; name: string; price: number }>;
-}) {
-  const deactivateCategories = await supabaseAdmin
-    .from("categories")
-    .update({ active: false })
-    .neq("id", "__never_match__");
-  if (deactivateCategories.error) {
-    throw new Error(
-      `Não foi possível preparar as categorias: ${deactivateCategories.error.message}`,
-    );
-  }
-
-  const categoryRows = data.categories.map((category, index) => ({
-    ...category,
-    sort_order: index,
-    active: true,
-  }));
-  const categories = await supabaseAdmin
-    .from("categories")
-    .upsert(categoryRows, { onConflict: "id" });
-  if (categories.error) {
-    throw new Error(`Não foi possível salvar as categorias: ${categories.error.message}`);
-  }
-
-  const deactivateAddons = await supabaseAdmin
-    .from("global_addons")
-    .update({ active: false })
-    .neq("id", "__never_match__");
-  if (deactivateAddons.error) {
-    throw new Error(`Não foi possível preparar os adicionais: ${deactivateAddons.error.message}`);
-  }
-
-  const addonRows = data.globalAddons.map((addon, index) => ({
-    ...addon,
-    sort_order: index,
-    active: true,
-  }));
-  const addons = await supabaseAdmin.from("global_addons").upsert(addonRows, { onConflict: "id" });
-  if (addons.error) {
-    throw new Error(`Não foi possível salvar os adicionais: ${addons.error.message}`);
-  }
-}
-
 export const adminSaveStoreSettings = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
   .validator((data: unknown) => settingsSchema.parse(data))
-  .handler(async ({ context, data }) => {
-    await assertStaff(context.userId);
-    await syncNormalizedCatalog(data);
+  .handler(async ({ data }) => {
+    requireAdminSession();
+    const sql = getDb();
 
-    const { data: updated, error } = await supabaseAdmin
-      .from("store_settings")
-      .update({
-        name: data.name,
-        tagline: data.tagline,
-        whatsapp: data.whatsapp,
-        whatsapp_display: data.whatsappDisplay,
-        delivery_fee: data.deliveryFee,
-        min_order: data.minOrder,
-        open_hour: data.openHour,
-        close_hour: data.closeHour,
-        accepting_orders: data.acceptingOrders,
-        timezone: data.timezone,
-        currency: data.currency,
-        payment_methods: data.paymentMethods,
-      })
-      .eq("id", 1)
-      .select()
-      .single();
+    await sql.begin(async (transaction) => {
+      await transaction`update categories set active = false`;
+      for (const [sortOrder, category] of data.categories.entries()) {
+        await transaction`
+          insert into categories (id, label, emoji, sort_order, active)
+          values (${category.id}, ${category.label}, ${category.emoji}, ${sortOrder}, true)
+          on conflict (id) do update set label = excluded.label, emoji = excluded.emoji,
+            sort_order = excluded.sort_order, active = true
+        `;
+      }
 
-    if (error) throw new Error(`Não foi possível salvar as configurações: ${error.message}`);
-    return updated;
+      await transaction`update global_addons set active = false`;
+      for (const [sortOrder, addon] of data.globalAddons.entries()) {
+        await transaction`
+          insert into global_addons (id, name, price, sort_order, active)
+          values (${addon.id}, ${addon.name}, ${addon.price}, ${sortOrder}, true)
+          on conflict (id) do update set name = excluded.name, price = excluded.price,
+            sort_order = excluded.sort_order, active = true
+        `;
+      }
+
+      await transaction`
+        update store_settings
+        set name = ${data.name}, tagline = ${data.tagline}, whatsapp = ${data.whatsapp},
+            whatsapp_display = ${data.whatsappDisplay}, delivery_fee = ${data.deliveryFee},
+            min_order = ${data.minOrder}, open_hour = ${data.openHour}, close_hour = ${data.closeHour},
+            accepting_orders = ${data.acceptingOrders}, timezone = ${data.timezone}, currency = ${data.currency},
+            payment_methods = ${JSON.stringify(data.paymentMethods)}, updated_at = now()
+        where id = 1
+      `;
+    });
+
+    const rows = await sql`select * from store_settings where id = 1 limit 1`;
+    return rows[0];
   });
 
 export const adminUpdateOrderStatus = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
   .validator((data: unknown) =>
     z.object({ id: z.string().uuid(), status: statusSchema }).parse(data),
   )
-  .handler(async ({ context, data }) => {
-    await assertStaff(context.userId);
-    const { data: updated, error } = await supabaseAdmin
-      .from("orders")
-      .update({ status: data.status })
-      .eq("id", data.id)
-      .select("id, status")
-      .single();
-
-    if (error) throw new Error(`Não foi possível atualizar o pedido: ${error.message}`);
-    return updated;
+  .handler(async ({ data }) => {
+    requireAdminSession();
+    const sql = getDb();
+    const rows = await sql`
+      update orders set status = ${data.status}, updated_at = now()
+      where id = ${data.id}::uuid
+      returning id, status
+    `;
+    if (!rows[0]) throw new Error("Pedido não encontrado.");
+    return rows[0];
   });

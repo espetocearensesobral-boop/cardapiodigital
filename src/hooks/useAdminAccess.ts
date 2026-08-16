@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
-import type { Session } from "@supabase/supabase-js";
-import { supabase } from "@/integrations/supabase/client";
+import { useServerFn } from "@tanstack/react-start";
+import { adminGetSession, adminLogin, adminLogout } from "@/lib/admin-auth.functions";
 
-type AccessStatus = "loading" | "unauthenticated" | "unauthorized" | "authorized";
+type AccessStatus = "loading" | "unauthenticated" | "authorized";
+
+type AdminSession = { email: string; authenticated: true } | null;
 
 type AdminAccess = {
   status: AccessStatus;
-  session: Session | null;
+  session: AdminSession;
   error: string | null;
   signIn: (email: string, password: string) => Promise<boolean>;
   signOut: () => Promise<void>;
@@ -14,77 +16,55 @@ type AdminAccess = {
 
 export function useAdminAccess(): AdminAccess {
   const [status, setStatus] = useState<AccessStatus>("loading");
-  const [session, setSession] = useState<Session | null>(null);
+  const [session, setSession] = useState<AdminSession>(null);
   const [error, setError] = useState<string | null>(null);
+  const getSession = useServerFn(adminGetSession);
+  const login = useServerFn(adminLogin);
+  const logout = useServerFn(adminLogout);
 
-  const resolveAccess = useCallback(async (nextSession: Session | null) => {
-    setSession(nextSession);
-    if (!nextSession) {
+  const refresh = useCallback(async () => {
+    try {
+      const result = await getSession();
+      if (result.authenticated) {
+        setSession({ email: result.email, authenticated: true });
+        setStatus("authorized");
+      } else {
+        setSession(null);
+        setStatus("unauthenticated");
+      }
+    } catch {
+      setSession(null);
       setStatus("unauthenticated");
-      return;
     }
-
-    const { data, error: membershipError } = await supabase
-      .from("staff_users")
-      .select("role")
-      .eq("user_id", nextSession.user.id)
-      .in("role", ["staff", "admin"])
-      .maybeSingle();
-
-    if (membershipError || !data) {
-      setStatus("unauthorized");
-      setError("Esta conta não possui acesso ao painel administrativo.");
-      return;
-    }
-
-    setError(null);
-    setStatus("authorized");
-  }, []);
+  }, [getSession]);
 
   useEffect(() => {
-    let mounted = true;
-
-    void supabase.auth.getSession().then(({ data }) => {
-      if (mounted) void resolveAccess(data.session);
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      if (mounted) void resolveAccess(nextSession);
-    });
-
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
-  }, [resolveAccess]);
+    void refresh();
+  }, [refresh]);
 
   const signIn = useCallback(
     async (email: string, password: string) => {
       setError(null);
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password,
-      });
-
-      if (signInError || !data.session) {
+      try {
+        const result = await login({ data: { email, password } });
+        setSession({ email: result.email, authenticated: true });
+        setStatus("authorized");
+        return true;
+      } catch (caught) {
+        setSession(null);
         setStatus("unauthenticated");
-        setError(signInError?.message || "Não foi possível iniciar a sessão.");
+        setError(caught instanceof Error ? caught.message : "Não foi possível iniciar a sessão.");
         return false;
       }
-
-      await resolveAccess(data.session);
-      return true;
     },
-    [resolveAccess],
+    [login],
   );
 
   const signOut = useCallback(async () => {
-    await supabase.auth.signOut();
+    await logout();
     setSession(null);
     setStatus("unauthenticated");
-  }, []);
+  }, [logout]);
 
   return { status, session, error, signIn, signOut };
 }

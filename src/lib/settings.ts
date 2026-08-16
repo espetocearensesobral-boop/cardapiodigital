@@ -1,5 +1,5 @@
 import { queryOptions, useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { getPublicSettings } from "@/lib/public-data.functions";
 
 export interface SystemSettings {
   name: string;
@@ -108,14 +108,8 @@ function parseAddons(value: unknown): GlobalAddon[] {
 }
 
 export async function fetchStoreSettings(): Promise<StoreSettings> {
-  const { data, error } = await supabase
-    .from("store_settings")
-    .select("*")
-    .eq("id", 1)
-    .maybeSingle();
-
-  if (error || !data) {
-    if (error) console.warn("[Settings] Could not load store settings:", error.message);
+  const data = await getPublicSettings();
+  if (!data) {
     return {
       system: DEFAULT_SETTINGS,
       categories: DEFAULT_CATEGORIES,
