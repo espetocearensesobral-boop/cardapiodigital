@@ -76,8 +76,11 @@ export function CheckoutSheet({ open, onClose, cart, notes, onSuccess }: Props) 
   const total = subtotal + deliveryFee;
 
   const mutation = useMutation({
-    mutationFn: async () =>
-      submit({
+    mutationFn: async () => {
+      if (!systemSettings.acceptingOrders) {
+        throw new Error("No momento não estamos aceitando novos pedidos.");
+      }
+      return submit({
         data: {
           clientOrderId,
           customerName: form.customerName.trim(),
@@ -102,7 +105,8 @@ export function CheckoutSheet({ open, onClose, cart, notes, onSuccess }: Props) 
             obs: line.obs,
           })),
         },
-      }),
+      });
+    },
     onSuccess: (result) => {
       onSuccess(result);
       setClientOrderId(createClientOrderId());
@@ -170,7 +174,7 @@ export function CheckoutSheet({ open, onClose, cart, notes, onSuccess }: Props) 
       footer={
         <button
           type="button"
-          disabled={mutation.isPending || cart.length === 0}
+          disabled={mutation.isPending || cart.length === 0 || !systemSettings.acceptingOrders}
           onClick={() => {
             if (!validate()) {
               toast.error("Revise os campos destacados.");
@@ -182,13 +186,23 @@ export function CheckoutSheet({ open, onClose, cart, notes, onSuccess }: Props) 
         >
           {mutation.isPending ? (
             <Loader2 className="size-5 animate-spin" />
-          ) : (
+          ) : systemSettings.acceptingOrders ? (
             <>Enviar pedido • {brl(total)}</>
+          ) : (
+            <>Pedidos pausados no momento</>
           )}
         </button>
       }
     >
       <div className="space-y-5 p-5">
+        {!systemSettings.acceptingOrders ? (
+          <div
+            className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-800 dark:text-amber-200"
+            role="status"
+          >
+            No momento, a loja não está aceitando novos pedidos. Tente novamente mais tarde.
+          </div>
+        ) : null}
         <div className="grid grid-cols-2 gap-3">
           {(
             [

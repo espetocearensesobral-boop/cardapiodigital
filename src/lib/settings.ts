@@ -10,6 +10,9 @@ export interface SystemSettings {
   minOrder: number;
   openHour: number;
   closeHour: number;
+  acceptingOrders: boolean;
+  timezone: string;
+  currency: string;
   paymentMethods: {
     pix: boolean;
     dinheiro: boolean;
@@ -44,6 +47,9 @@ export const DEFAULT_SETTINGS: SystemSettings = {
   minOrder: 30,
   openHour: 18,
   closeHour: 23,
+  acceptingOrders: true,
+  timezone: "America/Fortaleza",
+  currency: "BRL",
   paymentMethods: {
     pix: true,
     dinheiro: true,
@@ -135,6 +141,9 @@ export async function fetchStoreSettings(): Promise<StoreSettings> {
       minOrder: Number(data.min_order),
       openHour: data.open_hour,
       closeHour: data.close_hour,
+      acceptingOrders: data.accepting_orders,
+      timezone: data.timezone,
+      currency: data.currency,
       paymentMethods,
     },
     categories: parseCategories(data.categories),

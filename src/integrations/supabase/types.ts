@@ -8,6 +8,66 @@ export type Database = {
   };
   public: {
     Tables: {
+      categories: {
+        Row: {
+          active: boolean;
+          created_at: string;
+          emoji: string;
+          id: string;
+          label: string;
+          sort_order: number;
+          updated_at: string;
+        };
+        Insert: {
+          active?: boolean;
+          created_at?: string;
+          emoji?: string;
+          id: string;
+          label: string;
+          sort_order?: number;
+          updated_at?: string;
+        };
+        Update: {
+          active?: boolean;
+          created_at?: string;
+          emoji?: string;
+          id?: string;
+          label?: string;
+          sort_order?: number;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      global_addons: {
+        Row: {
+          active: boolean;
+          created_at: string;
+          id: string;
+          name: string;
+          price: number;
+          sort_order: number;
+          updated_at: string;
+        };
+        Insert: {
+          active?: boolean;
+          created_at?: string;
+          id: string;
+          name: string;
+          price: number;
+          sort_order?: number;
+          updated_at?: string;
+        };
+        Update: {
+          active?: boolean;
+          created_at?: string;
+          id?: string;
+          name?: string;
+          price?: number;
+          sort_order?: number;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       menu_items: {
         Row: {
           addons: Json;
@@ -70,8 +130,10 @@ export type Database = {
       };
       store_settings: {
         Row: {
+          accepting_orders: boolean;
           categories: Json;
           close_hour: number;
+          currency: string;
           delivery_fee: number;
           global_addons: Json;
           id: number;
@@ -80,13 +142,16 @@ export type Database = {
           open_hour: number;
           payment_methods: Json;
           tagline: string;
+          timezone: string;
           updated_at: string;
           whatsapp: string;
           whatsapp_display: string;
         };
         Insert: {
+          accepting_orders?: boolean;
           categories?: Json;
           close_hour?: number;
+          currency?: string;
           delivery_fee?: number;
           global_addons?: Json;
           id?: number;
@@ -95,13 +160,16 @@ export type Database = {
           open_hour?: number;
           payment_methods?: Json;
           tagline?: string;
+          timezone?: string;
           updated_at?: string;
           whatsapp?: string;
           whatsapp_display?: string;
         };
         Update: {
+          accepting_orders?: boolean;
           categories?: Json;
           close_hour?: number;
+          currency?: string;
           delivery_fee?: number;
           global_addons?: Json;
           id?: number;
@@ -110,19 +178,49 @@ export type Database = {
           open_hour?: number;
           payment_methods?: Json;
           tagline?: string;
+          timezone?: string;
           updated_at?: string;
           whatsapp?: string;
           whatsapp_display?: string;
         };
         Relationships: [];
       };
+      order_status_history: {
+        Row: {
+          changed_by: string | null;
+          created_at: string;
+          id: string;
+          note: string | null;
+          order_id: string;
+          status: string;
+        };
+        Insert: {
+          changed_by?: string | null;
+          created_at?: string;
+          id?: string;
+          note?: string | null;
+          order_id: string;
+          status: string;
+        };
+        Update: {
+          changed_by?: string | null;
+          created_at?: string;
+          id?: string;
+          note?: string | null;
+          order_id?: string;
+          status?: string;
+        };
+        Relationships: [];
+      };
       orders: {
         Row: {
+          cancelled_at: string | null;
           change_for: string | null;
           client_order_id: string | null;
           code: string;
           complement: string | null;
           created_at: string;
+          completed_at: string | null;
           customer_name: string;
           delivery_fee: number;
           id: string;
@@ -134,18 +232,22 @@ export type Database = {
           payment_method: string | null;
           phone: string | null;
           reference: string | null;
+          source: string;
           status: string;
           street: string | null;
           subtotal: number;
           table_number: string | null;
           total: number;
+          updated_at: string;
         };
         Insert: {
+          cancelled_at?: string | null;
           change_for?: string | null;
           client_order_id?: string | null;
           code: string;
           complement?: string | null;
           created_at?: string;
+          completed_at?: string | null;
           customer_name: string;
           delivery_fee?: number;
           id?: string;
@@ -157,18 +259,22 @@ export type Database = {
           payment_method?: string | null;
           phone?: string | null;
           reference?: string | null;
+          source?: string;
           status?: string;
           street?: string | null;
           subtotal: number;
           table_number?: string | null;
           total: number;
+          updated_at?: string;
         };
         Update: {
+          cancelled_at?: string | null;
           change_for?: string | null;
           client_order_id?: string | null;
           code?: string;
           complement?: string | null;
           created_at?: string;
+          completed_at?: string | null;
           customer_name?: string;
           delivery_fee?: number;
           id?: string;
@@ -180,11 +286,13 @@ export type Database = {
           payment_method?: string | null;
           phone?: string | null;
           reference?: string | null;
+          source?: string;
           status?: string;
           street?: string | null;
           subtotal?: number;
           table_number?: string | null;
           total?: number;
+          updated_at?: string;
         };
         Relationships: [];
       };

@@ -896,6 +896,24 @@ function AdminWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
               <h3 className="font-semibold text-base sm:text-lg flex items-center gap-2">
                 🚚 Entrega & Horários
               </h3>
+              <div className="flex items-center justify-between gap-3 rounded-lg border bg-muted/40 p-3.5">
+                <div>
+                  <Label
+                    htmlFor="sys-accepting-orders"
+                    className="cursor-pointer text-sm font-semibold"
+                  >
+                    Aceitar novos pedidos
+                  </Label>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    Desative temporariamente o checkout público sem apagar o cardápio.
+                  </p>
+                </div>
+                <Switch
+                  id="sys-accepting-orders"
+                  checked={sysForm.acceptingOrders}
+                  onCheckedChange={(value) => setSysForm({ ...sysForm, acceptingOrders: value })}
+                />
+              </div>
               <div className="space-y-3">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1.5">

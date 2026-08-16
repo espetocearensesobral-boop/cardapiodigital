@@ -36,6 +36,9 @@ const settingsSchema = z.object({
   minOrder: z.number().finite().min(0).max(100000),
   openHour: z.number().int().min(0).max(23),
   closeHour: z.number().int().min(0).max(23),
+  acceptingOrders: z.boolean().optional().default(true),
+  timezone: z.string().trim().min(1).max(80).optional().default("America/Fortaleza"),
+  currency: z.string().trim().length(3).optional().default("BRL"),
   paymentMethods: z.object({
     pix: z.boolean(),
     dinheiro: z.boolean(),
@@ -124,11 +127,58 @@ export const adminDeleteMenuItem = createServerFn({ method: "POST" })
     return { success: true as const };
   });
 
+async function syncNormalizedCatalog(data: {
+  categories: Array<{ id: string; label: string; emoji: string }>;
+  globalAddons: Array<{ id: string; name: string; price: number }>;
+}) {
+  const deactivateCategories = await supabaseAdmin
+    .from("categories")
+    .update({ active: false })
+    .neq("id", "__never_match__");
+  if (deactivateCategories.error) {
+    throw new Error(
+      `Não foi possível preparar as categorias: ${deactivateCategories.error.message}`,
+    );
+  }
+
+  const categoryRows = data.categories.map((category, index) => ({
+    ...category,
+    sort_order: index,
+    active: true,
+  }));
+  const categories = await supabaseAdmin
+    .from("categories")
+    .upsert(categoryRows, { onConflict: "id" });
+  if (categories.error) {
+    throw new Error(`Não foi possível salvar as categorias: ${categories.error.message}`);
+  }
+
+  const deactivateAddons = await supabaseAdmin
+    .from("global_addons")
+    .update({ active: false })
+    .neq("id", "__never_match__");
+  if (deactivateAddons.error) {
+    throw new Error(`Não foi possível preparar os adicionais: ${deactivateAddons.error.message}`);
+  }
+
+  const addonRows = data.globalAddons.map((addon, index) => ({
+    ...addon,
+    sort_order: index,
+    active: true,
+  }));
+  const addons = await supabaseAdmin.from("global_addons").upsert(addonRows, { onConflict: "id" });
+  if (addons.error) {
+    throw new Error(`Não foi possível salvar os adicionais: ${addons.error.message}`);
+  }
+}
+
 export const adminSaveStoreSettings = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: unknown) => settingsSchema.parse(data))
   .handler(async ({ context, data }) => {
     await assertStaff(context.userId);
+    await syncNormalizedCatalog(data);
+
     const { data: updated, error } = await supabaseAdmin
       .from("store_settings")
       .update({
@@ -140,9 +190,10 @@ export const adminSaveStoreSettings = createServerFn({ method: "POST" })
         min_order: data.minOrder,
         open_hour: data.openHour,
         close_hour: data.closeHour,
+        accepting_orders: data.acceptingOrders,
+        timezone: data.timezone,
+        currency: data.currency,
         payment_methods: data.paymentMethods,
-        categories: data.categories,
-        global_addons: data.globalAddons,
       })
       .eq("id", 1)
       .select()

@@ -46,6 +46,7 @@ type StoreSettingsSnapshot = {
   whatsapp: string;
   deliveryFee: number;
   minOrder: number;
+  acceptingOrders: boolean;
   paymentMethods: {
     pix: boolean;
     dinheiro: boolean;
@@ -92,7 +93,7 @@ async function getStoreSettings(): Promise<StoreSettingsSnapshot> {
 
   const { data, error } = await supabaseAdmin
     .from("store_settings")
-    .select("name, whatsapp, delivery_fee, min_order, payment_methods")
+    .select("name, whatsapp, delivery_fee, min_order, accepting_orders, payment_methods")
     .eq("id", 1)
     .single();
 
@@ -112,6 +113,7 @@ async function getStoreSettings(): Promise<StoreSettingsSnapshot> {
     whatsapp: data.whatsapp,
     deliveryFee: Number(data.delivery_fee),
     minOrder: Number(data.min_order),
+    acceptingOrders: data.accepting_orders !== false,
     paymentMethods: {
       pix: paymentMethods["pix"] !== false,
       dinheiro: paymentMethods["dinheiro"] !== false,
@@ -231,6 +233,9 @@ export function buildWhatsappMessage(
 
 export async function createOrder(input: CheckoutInput) {
   const settings = await getStoreSettings();
+  if (!settings.acceptingOrders) {
+    throw new Error("No momento não estamos aceitando novos pedidos.");
+  }
   const items = await priceAndValidateItems(input);
   const subtotal = items.reduce((sum, item) => sum + item.unitPrice * item.qty, 0);
   const deliveryFee = input.orderType === "delivery" ? settings.deliveryFee : 0;
