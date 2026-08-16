@@ -33,3 +33,7 @@ A finalização foi executada no preview com pagamento em dinheiro de R$ 50,00 p
 ## Mensagem WhatsApp
 
 A mensagem de pedido foi reorganizada para usar formatação nativa do WhatsApp: seções em MAIÚSCULAS, negrito com `*`, itálico com `_`, separadores curtos e quebras controladas. Cada adicional aparece em sua própria linha abaixo de `_ADICIONAIS:_`, e o resumo inclui subtotal, entrega, pagamento, troco e total. O número informado `998340085` é normalizado para `5588998340085`, correspondente a 55 + DDD 88 + telefone.
+
+## Correção da validação do pedido
+
+O erro `Não foi possível validar o cardápio. Tente novamente.` ocorria porque a presença das variáveis Supabase ativava automaticamente a consulta externa, mesmo com o catálogo público ainda mockado. O serviço agora usa o catálogo mockado por padrão e só ativa Supabase quando `MOCK_DATA_MODE=false` estiver configurado explicitamente. O cenário com variáveis Supabase presentes e sem `MOCK_DATA_MODE` foi coberto por teste de regressão; o pedido foi confirmado e o link do WhatsApp foi gerado normalmente.

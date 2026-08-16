@@ -56,6 +56,7 @@ describe("orders.server", () => {
     mockState.insertedOrders.length = 0;
     process.env["SUPABASE_URL"] = "https://example.supabase.co";
     process.env["SUPABASE_SERVICE_ROLE_KEY"] = "test-service-role-key";
+    process.env["MOCK_DATA_MODE"] = "false";
   });
 
   it("monta comprovante com adicionais discriminados", () => {
@@ -122,9 +123,8 @@ describe("orders.server", () => {
     });
   });
 
-  it("confirma o pedido com o catálogo mockado sem Supabase", async () => {
-    delete process.env["SUPABASE_URL"];
-    delete process.env["SUPABASE_SERVICE_ROLE_KEY"];
+  it("confirma o pedido com o catálogo mockado por padrão mesmo com Supabase configurado", async () => {
+    delete process.env["MOCK_DATA_MODE"];
 
     const result = await createOrder({
       clientOrderId: "00000000-0000-4000-8000-000000000003",

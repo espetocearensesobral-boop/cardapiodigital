@@ -62,3 +62,13 @@ order by tablename, policyname;
 ```
 
 A chave `SUPABASE_SERVICE_ROLE_KEY` deve permanecer exclusivamente nas variáveis server-side do deploy. Ela não deve ser cadastrada como variável `VITE_*`.
+
+## Modo do checkout
+
+Enquanto o catálogo público estiver usando dados mockados, o checkout também usa o catálogo local por padrão. Para ativar explicitamente a validação e o salvamento no Supabase após confirmar as tabelas e as variáveis do deploy, configure a variável server-side:
+
+```env
+MOCK_DATA_MODE=false
+```
+
+Com qualquer outro valor, ou sem essa variável, o pedido é validado e confirmado pelo catálogo mockado local, evitando que uma configuração Supabase incompleta interrompa a finalização do pedido.

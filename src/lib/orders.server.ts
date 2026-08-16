@@ -67,11 +67,9 @@ type MenuRow = {
 type Addon = { name: string; price: number };
 
 function isMockOrderMode() {
-  return (
-    process.env["MOCK_DATA_MODE"] === "true" ||
-    !process.env["SUPABASE_URL"] ||
-    !process.env["SUPABASE_SERVICE_ROLE_KEY"]
-  );
+  // O catálogo público permanece mockado temporariamente. O caminho Supabase
+  // só é ativado de forma explícita quando a integração estiver pronta.
+  return process.env["MOCK_DATA_MODE"] !== "false";
 }
 
 function money(value: number) {
