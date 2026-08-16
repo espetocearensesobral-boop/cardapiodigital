@@ -117,4 +117,33 @@ describe("orders.server", () => {
       client_order_id: "00000000-0000-4000-8000-000000000002",
     });
   });
+
+  it("confirma o pedido com o catálogo mockado sem Supabase", async () => {
+    delete process.env["SUPABASE_URL"];
+    delete process.env["SUPABASE_SERVICE_ROLE_KEY"];
+
+    const result = await createOrder({
+      clientOrderId: "00000000-0000-4000-8000-000000000003",
+      customerName: "Ana Silva",
+      phone: "88999990000",
+      orderType: "delivery",
+      street: "Rua Central",
+      number: "10",
+      neighborhood: "Centro",
+      paymentMethod: "dinheiro",
+      changeFor: "50",
+      items: [
+        {
+          id: "1",
+          qty: 1,
+          addons: [{ name: "Catupiry", price: 0 }],
+          obs: "",
+        },
+      ],
+    });
+
+    expect(result.code).toMatch(/^LBP-\d{6}$/);
+    expect(result.total).toBe(53);
+    expect(result.whatsappUrl).toContain("wa.me/5588998340085");
+  });
 });

@@ -17,7 +17,8 @@ export function DynamicHeroBanner() {
       subtitle: "entregues quentinhas",
       info: `Pedido mínimo ${brl(minOrder)} • entrega ${brl(deliveryFee)}`,
       icon: Flame,
-      gradient: "from-amber-600 via-red-600 to-rose-700",
+      gradient: "from-amber-600/90 via-red-600/90 to-rose-700/90",
+      image: "https://images.unsplash.com/photo-1579751626657-72bc17010498?w=1400&h=600&fit=crop",
     },
     {
       badge: "Massa Especial",
@@ -25,7 +26,8 @@ export function DynamicHeroBanner() {
       subtitle: "crocante e saborosa",
       info: "Ingredientes selecionados & bordas recheadas",
       icon: Sparkles,
-      gradient: "from-red-600 via-rose-600 to-amber-700",
+      gradient: "from-red-600/90 via-rose-600/90 to-amber-700/90",
+      image: "https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=1400&h=600&fit=crop",
     },
     {
       badge: "Entrega Rápida",
@@ -33,7 +35,8 @@ export function DynamicHeroBanner() {
       subtitle: "ou na sua Casa",
       info: "Pagamento facilitado no Pix, Cartão ou Dinheiro",
       icon: Bike,
-      gradient: "from-rose-700 via-red-600 to-orange-600",
+      gradient: "from-rose-700/90 via-red-600/90 to-orange-600/90",
+      image: "https://images.unsplash.com/photo-1574129830868-6e7d7a7f2c55?w=1400&h=600&fit=crop",
     },
   ];
 
@@ -49,10 +52,16 @@ export function DynamicHeroBanner() {
   const Icon = slide.icon;
 
   return (
-    <section className="relative mx-4 mt-4 overflow-hidden rounded-2xl shadow-brand transition-all duration-500 md:mx-6 lg:mx-8">
+    <section className="relative mx-4 mt-4 overflow-hidden rounded-2xl transition-all duration-500 md:mx-6 lg:mx-8">
       <div
-        className={`bg-gradient-to-r ${slide.gradient} relative flex min-h-[148px] items-center px-5 py-4 text-primary-foreground transition-colors duration-700 md:min-h-[190px] md:px-8 lg:min-h-[220px] lg:px-10`}
+        className={`relative flex min-h-[148px] items-center overflow-hidden bg-gradient-to-r ${slide.gradient} px-5 py-4 text-primary-foreground transition-colors duration-700 md:min-h-[190px] md:px-8 lg:min-h-[220px] lg:px-10`}
       >
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 bg-cover bg-center opacity-70"
+          style={{ backgroundImage: `url(${slide.image})` }}
+        />
+        <div aria-hidden="true" className={`absolute inset-0 bg-gradient-to-r ${slide.gradient}`} />
         {/* Background Decorative Icon */}
         <Icon className="absolute -bottom-6 -right-6 size-44 opacity-15 transition-transform duration-700 scale-105" />
 
@@ -67,7 +76,7 @@ export function DynamicHeroBanner() {
             </span>
           </div>
 
-          <h2 className="mt-2 font-display text-xl font-bold leading-tight drop-shadow-sm md:text-3xl lg:text-4xl">
+          <h2 className="mt-2 font-display text-xl font-bold leading-tight md:text-3xl lg:text-4xl">
             {slide.title}
             <br />
             <span className="text-amber-200">{slide.subtitle}</span>
@@ -88,9 +97,7 @@ export function DynamicHeroBanner() {
               onClick={() => setCurrentSlide(idx)}
               aria-label={`Ir para slide ${idx + 1}`}
               className={`h-2.5 rounded-full transition-all duration-300 ${
-                currentSlide === idx
-                  ? "w-2.5 bg-amber-300 shadow-sm"
-                  : "w-1.5 bg-white/40 hover:bg-white/70"
+                currentSlide === idx ? "w-2.5 bg-amber-300" : "w-1.5 bg-white/40 hover:bg-white/70"
               }`}
             />
           ))}

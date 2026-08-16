@@ -68,7 +68,7 @@ export function ProductSheet({ item, open, onClose, onAdd }: Props) {
           type="button"
           onClick={onClose}
           aria-label="Fechar"
-          className="absolute right-4 top-4 flex size-9 items-center justify-center rounded-full bg-card/90 text-foreground shadow-soft backdrop-blur"
+          className="absolute right-3 top-3 z-30 flex size-10 items-center justify-center rounded-full border border-border/70 bg-card/95 text-foreground shadow-soft backdrop-blur-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:right-4 sm:top-4"
         >
           <X className="size-4" />
         </button>

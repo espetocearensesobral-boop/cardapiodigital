@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Bike, Loader2, Store } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation } from "@tanstack/react-query";
@@ -51,8 +51,15 @@ export function CheckoutSheet({ open, onClose, cart, notes, onSuccess }: Props) 
     changeFor: "",
   });
   const [payment, setPayment] = useState<Payment>("pix");
+  const changeForRef = useRef<HTMLInputElement>(null);
   const [clientOrderId, setClientOrderId] = useState(createClientOrderId);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (payment !== "dinheiro") return;
+    const timer = window.setTimeout(() => changeForRef.current?.focus(), 0);
+    return () => window.clearTimeout(timer);
+  }, [payment]);
 
   const paymentOptions = useMemo(() => {
     const list: { value: Payment; label: string }[] = [];
@@ -171,6 +178,7 @@ export function CheckoutSheet({ open, onClose, cart, notes, onSuccess }: Props) 
       open={open}
       onClose={onClose}
       title="Finalizar pedido"
+      className="h-[92vh] md:h-[min(92vh,760px)]"
       footer={
         <button
           type="button"
@@ -296,8 +304,11 @@ export function CheckoutSheet({ open, onClose, cart, notes, onSuccess }: Props) 
                   </label>
                   <input
                     id="input-num"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     value={form.number}
-                    onChange={(e) => set("number", e.target.value)}
+                    onChange={(e) => set("number", onlyDigits(e.target.value))}
                     onKeyDown={(e) => handleKeyDown(e, "input-bairro")}
                     enterKeyHint="next"
                     placeholder="123"
@@ -386,7 +397,9 @@ export function CheckoutSheet({ open, onClose, cart, notes, onSuccess }: Props) 
                       Troco para quanto?
                     </label>
                     <input
+                      ref={changeForRef}
                       id="input-changeFor"
+                      type="text"
                       value={form.changeFor}
                       onChange={(e) => set("changeFor", onlyDigits(e.target.value))}
                       onKeyDown={(e) => handleKeyDown(e)}

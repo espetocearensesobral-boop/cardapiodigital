@@ -7,9 +7,10 @@ type Props = {
   title?: string;
   children: ReactNode;
   footer?: ReactNode;
+  className?: string;
 };
 
-export function BottomSheet({ open, onClose, title, children, footer }: Props) {
+export function BottomSheet({ open, onClose, title, children, footer, className }: Props) {
   useEffect(() => {
     if (!open) return;
     const previous = document.body.style.overflow;
@@ -34,7 +35,7 @@ export function BottomSheet({ open, onClose, title, children, footer }: Props) {
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className={`flex max-h-[92vh] w-full max-w-[480px] flex-col overflow-hidden rounded-t-3xl bg-card shadow-float transition-transform duration-300 [transition-timing-function:cubic-bezier(0.32,0.72,0,1)] md:max-w-2xl md:rounded-3xl lg:max-w-4xl ${
+        className={`flex max-h-[92vh] w-full max-w-[480px] flex-col overflow-hidden rounded-t-3xl bg-card shadow-float transition-transform duration-300 [transition-timing-function:cubic-bezier(0.32,0.72,0,1)] md:max-w-2xl md:rounded-3xl lg:max-w-4xl ${className ?? ""} ${
           open ? "translate-y-0" : "translate-y-full"
         }`}
       >

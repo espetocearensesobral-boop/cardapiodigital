@@ -1,4 +1,6 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { DEFAULT_MENU_ITEMS } from "@/lib/menu";
+import { DEFAULT_SETTINGS } from "@/lib/settings";
 
 export type SelectedAddonInput = {
   name: string;
@@ -64,6 +66,14 @@ type MenuRow = {
 
 type Addon = { name: string; price: number };
 
+function isMockOrderMode() {
+  return (
+    process.env["MOCK_DATA_MODE"] === "true" ||
+    !process.env["SUPABASE_URL"] ||
+    !process.env["SUPABASE_SERVICE_ROLE_KEY"]
+  );
+}
+
 function money(value: number) {
   return value.toFixed(2).replace(".", ",");
 }
@@ -87,8 +97,15 @@ function parseAddons(value: unknown): Addon[] {
 }
 
 async function getStoreSettings(): Promise<StoreSettingsSnapshot> {
-  if (!process.env["SUPABASE_URL"] || !process.env["SUPABASE_SERVICE_ROLE_KEY"]) {
-    throw new Error("O serviço de pedidos está temporariamente indisponível.");
+  if (isMockOrderMode()) {
+    return {
+      name: DEFAULT_SETTINGS.name,
+      whatsapp: DEFAULT_SETTINGS.whatsapp,
+      deliveryFee: DEFAULT_SETTINGS.deliveryFee,
+      minOrder: DEFAULT_SETTINGS.minOrder,
+      acceptingOrders: DEFAULT_SETTINGS.acceptingOrders,
+      paymentMethods: DEFAULT_SETTINGS.paymentMethods,
+    };
   }
 
   const { data, error } = await supabaseAdmin
@@ -124,10 +141,16 @@ async function getStoreSettings(): Promise<StoreSettingsSnapshot> {
 
 async function priceAndValidateItems(input: CheckoutInput) {
   const ids = [...new Set(input.items.map((item) => item.id))];
-  const { data: menu, error } = await supabaseAdmin
-    .from("menu_items")
-    .select("id, name, price, available, addons")
-    .in("id", ids);
+  const result = isMockOrderMode()
+    ? {
+        data: DEFAULT_MENU_ITEMS.filter((item) => ids.includes(item.id)),
+        error: null,
+      }
+    : await supabaseAdmin
+        .from("menu_items")
+        .select("id, name, price, available, addons")
+        .in("id", ids);
+  const { data: menu, error } = result;
 
   if (error) throw new Error("Não foi possível validar o cardápio. Tente novamente.");
   if (!menu || menu.length !== ids.length) {
@@ -253,6 +276,23 @@ export async function createOrder(input: CheckoutInput) {
   }
 
   const order: OrderInput = { ...input, items };
+
+  if (isMockOrderMode()) {
+    const savedCode = makeCode();
+    const message = buildWhatsappMessage(
+      order,
+      { subtotal, deliveryFee, total },
+      savedCode,
+      settings.name,
+    );
+    const targetPhone = settings.whatsapp.replace(/\D/g, "");
+    return {
+      code: savedCode,
+      total,
+      whatsappUrl: `https://wa.me/${targetPhone}?text=${encodeURIComponent(message)}`,
+    };
+  }
+
   let savedCode = "";
   let savedTotal = total;
   let lastError: string | null = null;
