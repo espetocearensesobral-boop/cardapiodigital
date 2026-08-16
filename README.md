@@ -61,3 +61,21 @@ O pedido é validado e gravado no Supabase antes de gerar a URL do WhatsApp. O s
 ## Lovable
 
 Este projeto foi originalmente criado com [Lovable](https://lovable.dev). Commits enviados à branch conectada podem ser sincronizados com o editor Lovable. Não faça force push, rebase, amend ou squash de commits já publicados.
+
+## Deploy na Vercel
+
+A aplicação pode ser publicada na Vercel mantendo o Supabase como banco, autenticação e camada RLS. O `vite.config.ts` utiliza o preset `vercel` do Nitro para gerar as Server Functions compatíveis com a plataforma.
+
+Na Vercel, cadastre as variáveis nos ambientes Production, Preview e Development conforme necessário:
+
+| Variável | Exposição | Finalidade |
+|---|---|---|
+| `SUPABASE_URL` | Server-side | URL do projeto Supabase usada pelo servidor. |
+| `SUPABASE_SERVICE_ROLE_KEY` | Server-side | Chave de serviço usada somente nas Server Functions protegidas. Nunca use prefixo `VITE_`. |
+| `SUPABASE_PUBLISHABLE_KEY` | Server-side | Chave pública compatível com o cliente Supabase. |
+| `VITE_SUPABASE_URL` | Pública | URL disponibilizada ao cliente do navegador. |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Pública | Chave publicável disponibilizada ao cliente do navegador. |
+| `SUPABASE_PROJECT_ID` | Opcional | Identificador do projeto para scripts e integrações administrativas. |
+| `VITE_SUPABASE_PROJECT_ID` | Opcional | Identificador público usado por configurações do frontend. |
+
+A Vercel fornece automaticamente `VERCEL_URL`, mas o projeto não depende dessa variável para o fluxo principal. Depois de conectar o repositório, use `pnpm run build` como comando de build e mantenha as migrations do diretório `supabase/migrations/` aplicadas no projeto Supabase antes de testar o painel administrativo.
