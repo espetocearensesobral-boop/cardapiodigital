@@ -49,9 +49,9 @@ export function DynamicHeroBanner() {
   const Icon = slide.icon;
 
   return (
-    <section className="relative mx-4 mt-4 overflow-hidden rounded-2xl shadow-brand transition-all duration-500">
+    <section className="relative mx-4 mt-4 overflow-hidden rounded-2xl shadow-brand transition-all duration-500 md:mx-6 lg:mx-8">
       <div
-        className={`bg-gradient-to-r ${slide.gradient} relative flex min-h-[148px] items-center px-5 py-4 text-primary-foreground transition-colors duration-700`}
+        className={`bg-gradient-to-r ${slide.gradient} relative flex min-h-[148px] items-center px-5 py-4 text-primary-foreground transition-colors duration-700 md:min-h-[190px] md:px-8 lg:min-h-[220px] lg:px-10`}
       >
         {/* Background Decorative Icon */}
         <Icon className="absolute -bottom-6 -right-6 size-44 opacity-15 transition-transform duration-700 scale-105" />
@@ -67,7 +67,7 @@ export function DynamicHeroBanner() {
             </span>
           </div>
 
-          <h2 className="mt-2 font-display text-xl font-bold leading-tight drop-shadow-sm">
+          <h2 className="mt-2 font-display text-xl font-bold leading-tight drop-shadow-sm md:text-3xl lg:text-4xl">
             {slide.title}
             <br />
             <span className="text-amber-200">{slide.subtitle}</span>

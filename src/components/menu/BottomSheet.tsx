@@ -25,7 +25,7 @@ export function BottomSheet({ open, onClose, title, children, footer }: Props) {
   return (
     <div
       aria-hidden={!open}
-      className={`fixed inset-0 z-50 flex items-end justify-center bg-foreground/50 backdrop-blur-sm transition-opacity duration-300 ${
+      className={`fixed inset-0 z-50 flex items-end justify-center bg-foreground/50 backdrop-blur-sm transition-opacity duration-300 md:items-center md:p-6 ${
         open ? "opacity-100" : "pointer-events-none opacity-0"
       }`}
       onClick={(e) => e.target === e.currentTarget && onClose()}
@@ -34,7 +34,7 @@ export function BottomSheet({ open, onClose, title, children, footer }: Props) {
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className={`flex max-h-[92vh] w-full max-w-[480px] flex-col overflow-hidden rounded-t-3xl bg-card shadow-float transition-transform duration-300 [transition-timing-function:cubic-bezier(0.32,0.72,0,1)] ${
+        className={`flex max-h-[92vh] w-full max-w-[480px] flex-col overflow-hidden rounded-t-3xl bg-card shadow-float transition-transform duration-300 [transition-timing-function:cubic-bezier(0.32,0.72,0,1)] md:max-w-2xl md:rounded-3xl lg:max-w-4xl ${
           open ? "translate-y-0" : "translate-y-full"
         }`}
       >

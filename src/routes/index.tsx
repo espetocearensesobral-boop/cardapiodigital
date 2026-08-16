@@ -105,9 +105,9 @@ function MenuPage() {
   return (
     <div
       suppressHydrationWarning
-      className="mx-auto min-h-screen w-full max-w-[480px] bg-background pb-28"
+      className="mx-auto min-h-screen w-full max-w-[480px] bg-background pb-28 md:max-w-3xl lg:max-w-6xl xl:max-w-7xl"
     >
-      <header className="sticky top-0 z-30 bg-card px-4 pb-4 pt-[calc(1rem+env(safe-area-inset-top))] shadow-soft">
+      <header className="sticky top-0 z-30 bg-card px-4 pb-4 pt-[calc(1rem+env(safe-area-inset-top))] shadow-soft md:px-6 lg:px-8">
         <div className="flex items-center gap-3">
           <div className="bg-brasa flex size-11 items-center justify-center rounded-xl text-primary-foreground shadow-brand">
             <Pizza className="size-5" />
@@ -149,7 +149,7 @@ function MenuPage() {
 
       <DynamicHeroBanner />
 
-      <div className="px-4 pt-4">
+      <div className="px-4 pt-4 md:px-6 lg:px-8">
         <div className="flex items-center gap-2.5 rounded-full border border-border bg-card px-4 py-3 transition-colors focus-within:border-primary">
           <Search className="size-4 text-muted-foreground" />
           <input
@@ -162,7 +162,7 @@ function MenuPage() {
         </div>
       </div>
 
-      <nav className="sticky top-[76px] z-20 bg-background/95 px-4 py-3 backdrop-blur">
+      <nav className="sticky top-[76px] z-20 bg-background/95 px-4 py-3 backdrop-blur md:px-6 lg:px-8">
         <div className="no-scrollbar flex gap-2 overflow-x-auto">
           {categoryKeys.map((key) => {
             const info = categoryMap.get(key);
@@ -188,7 +188,7 @@ function MenuPage() {
         </div>
       </nav>
 
-      <main className="px-4">
+      <main className="px-4 md:px-6 lg:px-8">
         {grouped.length === 0 ? (
           <div className="flex flex-col items-center gap-2 py-16 text-center">
             <Search className="size-9 text-muted-foreground" />
@@ -198,10 +198,10 @@ function MenuPage() {
         ) : (
           grouped.map(([key, items]) => (
             <section key={key} className="animate-slide-up">
-              <h2 className="px-1 pb-2 pt-4 font-display text-lg font-semibold">
+              <h2 className="px-1 pb-2 pt-4 font-display text-lg font-semibold md:text-xl">
                 {categoryMap.get(key)?.label || key}
               </h2>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-4 xl:grid-cols-5">
                 {items.map((item) => (
                   <ProductCard
                     key={item.id}
@@ -220,7 +220,7 @@ function MenuPage() {
         <button
           type="button"
           onClick={() => setCartOpen(true)}
-          className="bg-brasa fixed bottom-4 left-1/2 z-40 flex w-[calc(100%-2rem)] max-w-[448px] -translate-x-1/2 animate-slide-up items-center justify-between rounded-2xl px-5 py-4 text-primary-foreground shadow-float"
+          className="bg-brasa fixed bottom-4 left-1/2 z-40 flex w-[calc(100%-2rem)] max-w-[448px] -translate-x-1/2 md:max-w-2xl lg:max-w-4xl animate-slide-up items-center justify-between rounded-2xl px-5 py-4 text-primary-foreground shadow-float"
         >
           <span className="flex items-center gap-2 font-display text-sm font-semibold">
             <ShoppingBag className="size-4" />
