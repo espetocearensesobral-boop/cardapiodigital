@@ -23,3 +23,9 @@ No checkout, os modos Entrega e No local usam o mesmo espaço vertical do modal,
 O preview Nitro respondeu HTTP 200 para a rota raiz, entregou o `manifest.json` com ícones 192/512 e entregou `sw.js` com content-type JavaScript. No navegador, o manifest foi encontrado em `/manifest.json`, o contexto seguro estava ativo, o service worker `http://localhost:3011/sw.js` estava controlando a página e a altura da viewport visual foi detectada para sincronização com o teclado.
 
 A página exibiu o prompt de instalação do cardápio no preview. Ao abrir o modal de produto, o foco inicial foi direcionado ao botão `Fechar`, o diálogo foi identificado com `role=dialog` e o controle está dentro do modal, sem deixar o foco atrás da camada.
+
+## Checkout em três etapas
+
+O checkout foi validado no preview mobile com o fluxo `Dados → Revisão → Pagamento`. A primeira etapa exibiu entrega/local e dados de contato/endereço; a segunda apresentou endereço, cliente, itens e total com opção Editar; a terceira exibiu Pix, Dinheiro e Cartão na entrega. Ao informar R$ 50,00 para um total de R$ 45,00, a interface calculou e exibiu `Seu troco será R$ 5,00`.
+
+A finalização foi executada no preview com pagamento em dinheiro de R$ 50,00 para total de R$ 45,00. O pedido foi aceito sem o erro de validação do cardápio e abriu o WhatsApp com o código `LBP-483259`, endereço, itens, total e informação de troco.
