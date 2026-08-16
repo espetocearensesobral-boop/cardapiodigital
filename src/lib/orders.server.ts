@@ -187,10 +187,31 @@ async function priceAndValidateItems(input: CheckoutInput) {
 }
 
 const PAYMENT_LABEL: Record<string, string> = {
-  pix: "Pix",
-  dinheiro: "Dinheiro em Espécie",
-  cartao: "Cartão na Entrega",
+  pix: "PIX",
+  dinheiro: "DINHEIRO EM ESPÉCIE",
+  cartao: "CARTÃO NA ENTREGA",
 };
+
+function cleanWhatsAppText(value: string | undefined) {
+  return (value ?? "")
+    .replace(/\r?\n/g, " ")
+    .replace(/[*_~`]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function formatInputMoney(value: string) {
+  const cleaned = cleanWhatsAppText(value).replace(",", ".");
+  const amount = Number(cleaned);
+  return Number.isFinite(amount) ? money(amount) : cleaned;
+}
+
+function normalizeWhatsAppPhone(value: string) {
+  const digits = value.replace(/\D/g, "");
+  if (digits.length === 9) return `5588${digits}`;
+  if (digits.length === 11 && digits.startsWith("88")) return `55${digits}`;
+  return digits;
+}
 
 export function buildWhatsappMessage(
   input: OrderInput,
@@ -201,57 +222,72 @@ export function buildWhatsappMessage(
   const now = new Date();
   const dateStr = now.toLocaleDateString("pt-BR");
   const timeStr = now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-
   const lines: string[] = [];
-  lines.push(`🍕 *${restaurantName.toUpperCase()}* 🧾`);
-  lines.push(`📦 *Pedido:* ${code} | 🗓️ ${dateStr} - ${timeStr}`);
+  const customerName = cleanWhatsAppText(input.customerName);
+  const phone = cleanWhatsAppText(input.phone);
+
+  lines.push(`*${cleanWhatsAppText(restaurantName).toUpperCase()}*`);
+  lines.push(`*PEDIDO ${cleanWhatsAppText(code)}*`);
+  lines.push(`_Data: ${dateStr} às ${timeStr}_`);
   lines.push("");
-  lines.push(`👤 *CLIENTE:* ${input.customerName}`);
-  lines.push(`📞 *Contato:* ${input.phone}`);
+  lines.push("--------------------");
+  lines.push("*DADOS DO CLIENTE*");
+  lines.push(`*CLIENTE:* ${customerName}`);
+  lines.push(`*CONTATO:* ${phone}`);
 
   if (input.orderType === "delivery") {
-    const addressMain = `${input.street || "Endereço não informado"}, Nº ${input.number || "S/N"}${input.complement ? ` - ${input.complement}` : ""}`;
-    lines.push(`🛵 *ENTREGA:* ${addressMain} (Bairro: ${input.neighborhood || "Não informado"})`);
-    if (input.reference) lines.push(`📍 *Ponto de Ref:* ${input.reference}`);
-  } else if (input.tableNumber) {
-    lines.push(`🍽️ *MESA:* Nº ${input.tableNumber}`);
+    const street = cleanWhatsAppText(input.street) || "Endereço não informado";
+    const number = cleanWhatsAppText(input.number) || "S/N";
+    const neighborhood = cleanWhatsAppText(input.neighborhood) || "Não informado";
+    const addressMain = `${street}, Nº ${number}${input.complement ? ` - ${cleanWhatsAppText(input.complement)}` : ""}`;
+    lines.push(`*ENTREGA:* ${addressMain}`);
+    lines.push(`*BAIRRO:* ${neighborhood}`);
+    if (input.reference) lines.push(`*REFERÊNCIA:* ${cleanWhatsAppText(input.reference)}`);
+  } else {
+    lines.push(`*CONSUMO NO LOCAL:* MESA Nº ${cleanWhatsAppText(input.tableNumber) || "S/N"}`);
   }
 
   lines.push("");
-  lines.push("➖➖➖➖➖➖➖➖➖➖");
-  lines.push("🛒 *ITENS DO PEDIDO*");
+  lines.push("--------------------");
+  lines.push("*ITENS DO PEDIDO*");
   lines.push("");
 
   for (const item of input.items) {
-    lines.push(`🍕 *${item.qty}x ${item.name}* — R$ ${money(item.unitPrice * item.qty)}`);
+    lines.push(
+      `*${item.qty}x ${cleanWhatsAppText(item.name)}* - R$ ${money(item.unitPrice * item.qty)}`,
+    );
     if (item.addons.length > 0) {
-      lines.push("   ➕ *Adicionais:*");
-      for (const addon of item.addons)
-        lines.push(`     • ${addon.name} (+R$ ${money(addon.price)})`);
+      lines.push("_ADICIONAIS:_");
+      for (const addon of item.addons) {
+        lines.push(`- ${cleanWhatsAppText(addon.name)} (+R$ ${money(addon.price)})`);
+      }
     }
-    if (item.obs) lines.push(`   📝 *Obs:* ${item.obs}`);
+    if (item.obs) lines.push(`_OBSERVAÇÃO:_ ${cleanWhatsAppText(item.obs)}`);
+    lines.push("");
   }
 
   if (input.notes) {
+    lines.push("_OBSERVAÇÕES GERAIS:_");
+    lines.push(cleanWhatsAppText(input.notes));
     lines.push("");
-    lines.push(`🗒️ *Obs Gerais:* ${input.notes}`);
   }
 
+  lines.push("--------------------");
+  lines.push("*RESUMO FINANCEIRO*");
+  lines.push(`SUBTOTAL: R$ ${money(totals.subtotal)}`);
+  lines.push(`ENTREGA: ${totals.deliveryFee > 0 ? `R$ ${money(totals.deliveryFee)}` : "GRÁTIS"}`);
+  lines.push(`*PAGAMENTO:* ${PAYMENT_LABEL[input.paymentMethod ?? ""] ?? "A COMBINAR"}`);
+  if (input.changeFor) lines.push(`*TROCO PARA:* R$ ${formatInputMoney(input.changeFor)}`);
   lines.push("");
-  lines.push("➖➖➖➖➖➖➖➖➖➖");
-  lines.push("💰 *RESUMO FINANCEIRO*");
-  lines.push(`🔹 Subtotal: R$ ${money(totals.subtotal)}`);
-  lines.push(
-    `🔹 Entrega: ${totals.deliveryFee > 0 ? `R$ ${money(totals.deliveryFee)}` : "Grátis"}`,
-  );
-  lines.push(`💳 *Pagamento:* ${PAYMENT_LABEL[input.paymentMethod ?? ""] ?? "A combinar"}`);
-  if (input.changeFor) lines.push(`💵 *Troco para:* R$ ${input.changeFor}`);
+  lines.push(`*TOTAL DO PEDIDO: R$ ${money(totals.total)}*`);
   lines.push("");
-  lines.push(`🟢 *TOTAL DO PEDIDO: R$ ${money(totals.total)}*`);
-  lines.push("➖➖➖➖➖➖➖➖➖➖");
-  lines.push("✅ _Pedido registrado com sucesso._");
+  lines.push("--------------------");
+  lines.push("_Pedido registrado com sucesso._");
 
-  return lines.join("\n");
+  return lines
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }
 
 export async function createOrder(input: CheckoutInput) {
@@ -285,7 +321,7 @@ export async function createOrder(input: CheckoutInput) {
       savedCode,
       settings.name,
     );
-    const targetPhone = settings.whatsapp.replace(/\D/g, "");
+    const targetPhone = normalizeWhatsAppPhone(settings.whatsapp);
     return {
       code: savedCode,
       total,
@@ -350,7 +386,7 @@ export async function createOrder(input: CheckoutInput) {
     savedCode,
     settings.name,
   );
-  const targetPhone = settings.whatsapp.replace(/\D/g, "");
+  const targetPhone = normalizeWhatsAppPhone(settings.whatsapp);
   return {
     code: savedCode,
     total: savedTotal,

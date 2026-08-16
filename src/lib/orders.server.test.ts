@@ -85,8 +85,12 @@ describe("orders.server", () => {
     );
 
     expect(message).toContain("LBP-123456");
-    expect(message).toContain("Catupiry (+R$ 8,00)");
-    expect(message).toContain("TOTAL DO PEDIDO: R$ 53,00");
+    expect(message).toContain("*LA BELLA PIZZA*");
+    expect(message).toContain("*ITENS DO PEDIDO*");
+    expect(message).toContain("_ADICIONAIS:_\n- Catupiry (+R$ 8,00)");
+    expect(message).toContain("*PAGAMENTO:* PIX");
+    expect(message).toContain("*TOTAL DO PEDIDO: R$ 53,00*");
+    expect(message).not.toContain("\n\n\n");
   });
 
   it("ignora o preço enviado pelo cliente e usa o preço do banco", async () => {
@@ -145,5 +149,7 @@ describe("orders.server", () => {
     expect(result.code).toMatch(/^LBP-\d{6}$/);
     expect(result.total).toBe(53);
     expect(result.whatsappUrl).toContain("wa.me/5588998340085");
+    expect(decodeURIComponent(result.whatsappUrl)).toContain("_ADICIONAIS:_");
+    expect(decodeURIComponent(result.whatsappUrl)).toContain("*TROCO PARA:* R$ 50,00");
   });
 });
