@@ -28,7 +28,10 @@ export function ProductCard({ item, onOpen, onQuickAdd }: Props) {
       <img
         src={item.image_url}
         alt={item.name}
+        width={600}
+        height={600}
         loading="lazy"
+        decoding="async"
         className={`aspect-square w-full bg-muted object-cover ${item.available ? "" : "opacity-50 grayscale"}`}
       />
 

@@ -1,15 +1,19 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { RESTAURANT } from "@/lib/config";
 
-export type OrderItemInput = {
+export type SelectedAddonInput = {
   name: string;
+  price: number;
+};
+
+export type CheckoutItemInput = {
+  id: string;
   qty: number;
-  unitPrice: number;
-  addons: { name: string; price: number }[];
+  addons: SelectedAddonInput[];
   obs: string;
 };
 
-export type OrderInput = {
+export type CheckoutInput = {
+  clientOrderId: string;
   customerName: string;
   phone: string;
   orderType: "delivery" | "local";
@@ -22,16 +26,139 @@ export type OrderInput = {
   paymentMethod?: string | undefined;
   changeFor?: string | undefined;
   notes?: string | undefined;
+  items: CheckoutItemInput[];
+};
+
+export type OrderItemInput = {
+  name: string;
+  qty: number;
+  unitPrice: number;
+  addons: SelectedAddonInput[];
+  obs: string;
+};
+
+export type OrderInput = Omit<CheckoutInput, "items"> & {
   items: OrderItemInput[];
 };
+
+type StoreSettingsSnapshot = {
+  name: string;
+  whatsapp: string;
+  deliveryFee: number;
+  minOrder: number;
+  paymentMethods: {
+    pix: boolean;
+    dinheiro: boolean;
+    cartao: boolean;
+  };
+};
+
+type MenuRow = {
+  id: string;
+  name: string;
+  price: number;
+  available: boolean;
+  addons: unknown;
+};
+
+type Addon = { name: string; price: number };
 
 function money(value: number) {
   return value.toFixed(2).replace(".", ",");
 }
 
 function makeCode() {
-  const n = Math.floor(1000 + Math.random() * 9000);
+  const n = Math.floor(100000 + Math.random() * 900000);
   return `LBP-${n}`;
+}
+
+function parseAddons(value: unknown): Addon[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter(
+    (addon): addon is Addon =>
+      typeof addon === "object" &&
+      addon !== null &&
+      typeof addon.name === "string" &&
+      typeof addon.price === "number" &&
+      Number.isFinite(addon.price) &&
+      addon.price >= 0,
+  );
+}
+
+async function getStoreSettings(): Promise<StoreSettingsSnapshot> {
+  if (!process.env["SUPABASE_URL"] || !process.env["SUPABASE_SERVICE_ROLE_KEY"]) {
+    throw new Error("O serviço de pedidos está temporariamente indisponível.");
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from("store_settings")
+    .select("name, whatsapp, delivery_fee, min_order, payment_methods")
+    .eq("id", 1)
+    .single();
+
+  if (error || !data) {
+    throw new Error("As configurações do restaurante não estão disponíveis.");
+  }
+
+  const paymentMethods =
+    typeof data.payment_methods === "object" &&
+    data.payment_methods !== null &&
+    !Array.isArray(data.payment_methods)
+      ? (data.payment_methods as Record<string, unknown>)
+      : {};
+
+  return {
+    name: data.name,
+    whatsapp: data.whatsapp,
+    deliveryFee: Number(data.delivery_fee),
+    minOrder: Number(data.min_order),
+    paymentMethods: {
+      pix: paymentMethods["pix"] !== false,
+      dinheiro: paymentMethods["dinheiro"] !== false,
+      cartao: paymentMethods["cartao"] !== false,
+    },
+  };
+}
+
+async function priceAndValidateItems(input: CheckoutInput) {
+  const ids = [...new Set(input.items.map((item) => item.id))];
+  const { data: menu, error } = await supabaseAdmin
+    .from("menu_items")
+    .select("id, name, price, available, addons")
+    .in("id", ids);
+
+  if (error) throw new Error("Não foi possível validar o cardápio. Tente novamente.");
+  if (!menu || menu.length !== ids.length) {
+    throw new Error("Um ou mais produtos não estão mais disponíveis. Atualize o carrinho.");
+  }
+
+  const menuById = new Map((menu as MenuRow[]).map((item) => [item.id, item]));
+  const items: OrderItemInput[] = [];
+
+  for (const selected of input.items) {
+    const menuItem = menuById.get(selected.id);
+    if (!menuItem || !menuItem.available) {
+      throw new Error("Um dos produtos selecionados está esgotado.");
+    }
+
+    const allowedAddons = new Map(parseAddons(menuItem.addons).map((addon) => [addon.name, addon]));
+    const addons = selected.addons.map((addon) => {
+      const approved = allowedAddons.get(addon.name);
+      if (!approved) throw new Error(`O adicional ${addon.name} não está disponível.`);
+      return approved;
+    });
+
+    const unitPrice = Number(menuItem.price) + addons.reduce((sum, addon) => sum + addon.price, 0);
+    items.push({
+      name: menuItem.name,
+      qty: selected.qty,
+      unitPrice,
+      addons,
+      obs: selected.obs.trim(),
+    });
+  }
+
+  return items;
 }
 
 const PAYMENT_LABEL: Record<string, string> = {
@@ -44,12 +171,14 @@ export function buildWhatsappMessage(
   input: OrderInput,
   totals: { subtotal: number; deliveryFee: number; total: number },
   code: string,
+  restaurantName: string,
 ) {
-  const dateStr = new Date().toLocaleDateString("pt-BR");
-  const timeStr = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  const now = new Date();
+  const dateStr = now.toLocaleDateString("pt-BR");
+  const timeStr = now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 
   const lines: string[] = [];
-  lines.push(`🍕 *LA BELLA PIZZA* 🧾`);
+  lines.push(`🍕 *${restaurantName.toUpperCase()}* 🧾`);
   lines.push(`📦 *Pedido:* ${code} | 🗓️ ${dateStr} - ${timeStr}`);
   lines.push("");
   lines.push(`👤 *CLIENTE:* ${input.customerName}`);
@@ -58,9 +187,7 @@ export function buildWhatsappMessage(
   if (input.orderType === "delivery") {
     const addressMain = `${input.street || "Endereço não informado"}, Nº ${input.number || "S/N"}${input.complement ? ` - ${input.complement}` : ""}`;
     lines.push(`🛵 *ENTREGA:* ${addressMain} (Bairro: ${input.neighborhood || "Não informado"})`);
-    if (input.reference) {
-      lines.push(`📍 *Ponto de Ref:* ${input.reference}`);
-    }
+    if (input.reference) lines.push(`📍 *Ponto de Ref:* ${input.reference}`);
   } else if (input.tableNumber) {
     lines.push(`🍽️ *MESA:* Nº ${input.tableNumber}`);
   }
@@ -72,15 +199,12 @@ export function buildWhatsappMessage(
 
   for (const item of input.items) {
     lines.push(`🍕 *${item.qty}x ${item.name}* — R$ ${money(item.unitPrice * item.qty)}`);
-    if (item.addons && item.addons.length > 0) {
-      lines.push(`   ➕ *Adicionais:*`);
-      for (const addon of item.addons) {
+    if (item.addons.length > 0) {
+      lines.push("   ➕ *Adicionais:*");
+      for (const addon of item.addons)
         lines.push(`     • ${addon.name} (+R$ ${money(addon.price)})`);
-      }
     }
-    if (item.obs) {
-      lines.push(`   📝 *Obs:* ${item.obs}`);
-    }
+    if (item.obs) lines.push(`   📝 *Obs:* ${item.obs}`);
   }
 
   if (input.notes) {
@@ -95,56 +219,44 @@ export function buildWhatsappMessage(
   lines.push(
     `🔹 Entrega: ${totals.deliveryFee > 0 ? `R$ ${money(totals.deliveryFee)}` : "Grátis"}`,
   );
-  lines.push(
-    `💳 *Pagamento:* ${PAYMENT_LABEL[input.paymentMethod ?? "pix"] ?? input.paymentMethod}`,
-  );
-  if (input.changeFor) {
-    lines.push(`💵 *Troco para:* R$ ${input.changeFor}`);
-  }
-
+  lines.push(`💳 *Pagamento:* ${PAYMENT_LABEL[input.paymentMethod ?? ""] ?? "A combinar"}`);
+  if (input.changeFor) lines.push(`💵 *Troco para:* R$ ${input.changeFor}`);
   lines.push("");
   lines.push(`🟢 *TOTAL DO PEDIDO: R$ ${money(totals.total)}*`);
   lines.push("➖➖➖➖➖➖➖➖➖➖");
-  lines.push("✅ _Obrigado pela preferência! Pedido registrado com sucesso._");
+  lines.push("✅ _Pedido registrado com sucesso._");
 
   return lines.join("\n");
 }
 
-export async function createOrder(input: OrderInput) {
-  const subtotal = input.items.reduce((sum, i) => sum + i.unitPrice * i.qty, 0);
-  const deliveryFee = input.orderType === "delivery" ? RESTAURANT.deliveryFee : 0;
+export async function createOrder(input: CheckoutInput) {
+  const settings = await getStoreSettings();
+  const items = await priceAndValidateItems(input);
+  const subtotal = items.reduce((sum, item) => sum + item.unitPrice * item.qty, 0);
+  const deliveryFee = input.orderType === "delivery" ? settings.deliveryFee : 0;
   const total = subtotal + deliveryFee;
 
-  if (subtotal < RESTAURANT.minOrder) {
-    throw new Error(`O pedido mínimo é de R$ ${money(RESTAURANT.minOrder)}. Adicione mais itens.`);
+  if (subtotal < settings.minOrder) {
+    throw new Error(`O pedido mínimo é de R$ ${money(settings.minOrder)}. Adicione mais itens.`);
   }
 
-  // Confere os preços contra o banco se disponível
-  try {
-    const { data: menu, error: menuError } = await supabaseAdmin
-      .from("menu_items")
-      .select("name, price, available");
-    if (!menuError && menu && menu.length > 0) {
-      for (const item of input.items) {
-        const match = menu.find((m) => m.name === item.name);
-        if (match) {
-          if (!match.available) throw new Error(`${item.name} está esgotado no momento.`);
-          if (item.unitPrice + 0.001 < Number(match.price)) {
-            throw new Error(`Preço inválido para ${item.name}. Atualize o carrinho.`);
-          }
-        }
-      }
-    }
-  } catch (err) {
-    if (err instanceof Error && err.message.includes("esgotado")) throw err;
-    console.warn("[Orders] Supabase validation skipped or offline:", err);
+  if (
+    input.paymentMethod &&
+    !settings.paymentMethods[input.paymentMethod as keyof StoreSettingsSnapshot["paymentMethods"]]
+  ) {
+    throw new Error("A forma de pagamento selecionada não está disponível.");
   }
 
-  const code = makeCode();
+  const order: OrderInput = { ...input, items };
+  let savedCode = "";
+  let savedTotal = total;
+  let lastError: string | null = null;
 
-  try {
-    const { error: insertError } = await supabaseAdmin.from("orders").insert({
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const code = makeCode();
+    const { error } = await supabaseAdmin.from("orders").insert({
       code,
+      client_order_id: input.clientOrderId,
       customer_name: input.customerName,
       phone: input.phone,
       order_type: input.orderType,
@@ -156,25 +268,47 @@ export async function createOrder(input: OrderInput) {
       table_number: input.tableNumber ?? null,
       payment_method: input.paymentMethod ?? null,
       change_for: input.changeFor ?? null,
-      items: input.items as never,
+      items,
       notes: input.notes ?? null,
       subtotal,
       delivery_fee: deliveryFee,
       total,
     });
-    if (insertError) {
-      console.warn("[Orders] Could not record order in Supabase:", insertError);
-    } else {
-      console.log(`[Orders] Order ${code} recorded successfully in cloud database.`);
+
+    if (!error) {
+      savedCode = code;
+      break;
     }
-  } catch (err) {
-    console.warn("[Orders] Could not record order in Supabase:", err);
+
+    const { data: existing } = await supabaseAdmin
+      .from("orders")
+      .select("code, total")
+      .eq("client_order_id", input.clientOrderId)
+      .maybeSingle();
+    if (existing) {
+      savedCode = existing.code;
+      savedTotal = Number(existing.total);
+      break;
+    }
+
+    lastError = error.message;
   }
 
-  const message = buildWhatsappMessage(input, { subtotal, deliveryFee, total }, code);
-  // Requested number 88998340085 -> 5588998340085
-  const targetPhone = "5588998340085";
-  const whatsappUrl = `https://wa.me/${targetPhone}?text=${encodeURIComponent(message)}`;
+  if (!savedCode) {
+    console.error("[Orders] Could not record order:", lastError);
+    throw new Error("Não foi possível registrar o pedido. Tente novamente.");
+  }
 
-  return { code, total, whatsappUrl };
+  const message = buildWhatsappMessage(
+    order,
+    { subtotal, deliveryFee, total: savedTotal },
+    savedCode,
+    settings.name,
+  );
+  const targetPhone = settings.whatsapp.replace(/\D/g, "");
+  return {
+    code: savedCode,
+    total: savedTotal,
+    whatsappUrl: `https://wa.me/${targetPhone}?text=${encodeURIComponent(message)}`,
+  };
 }

@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { queryOptions, useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface SystemSettings {
   name: string;
@@ -28,11 +29,17 @@ export interface GlobalAddon {
   price: number;
 }
 
+export type StoreSettings = {
+  system: SystemSettings;
+  categories: CategoryItem[];
+  globalAddons: GlobalAddon[];
+};
+
 export const DEFAULT_SETTINGS: SystemSettings = {
   name: "La Bella Pizza",
   tagline: "A melhor pizza da região • Delivery e local",
-  whatsapp: "5588981764990",
-  whatsappDisplay: "(88) 98176-4990",
+  whatsapp: "5588998340085",
+  whatsappDisplay: "(88) 99834-0085",
   deliveryFee: 5,
   minOrder: 30,
   openHour: 18,
@@ -62,111 +69,97 @@ export const DEFAULT_GLOBAL_ADDONS: GlobalAddon[] = [
   { id: "6", name: "Extra Queijo", price: 7 },
 ];
 
-const SETTINGS_KEY = "lbp_system_settings_v1";
-const CATEGORIES_KEY = "lbp_categories_v1";
-const ADDONS_KEY = "lbp_global_addons_v1";
+const SETTINGS_QUERY_KEY = ["store-settings"] as const;
 
-export function getSystemSettings(): SystemSettings {
-  if (typeof window === "undefined") return DEFAULT_SETTINGS;
-  try {
-    const raw = localStorage.getItem(SETTINGS_KEY);
-    if (!raw) return DEFAULT_SETTINGS;
-    return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
-  } catch {
-    return DEFAULT_SETTINGS;
-  }
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
 }
 
-export function saveSystemSettings(settings: SystemSettings) {
-  if (typeof window !== "undefined") {
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
-    window.dispatchEvent(new Event("lbp_settings_updated"));
-  }
+function parseCategories(value: unknown): CategoryItem[] {
+  if (!Array.isArray(value)) return DEFAULT_CATEGORIES;
+  const parsed = value.filter(
+    (item): item is CategoryItem =>
+      isRecord(item) &&
+      typeof item["id"] === "string" &&
+      typeof item["label"] === "string" &&
+      typeof item["emoji"] === "string",
+  );
+  return parsed.length > 0 ? parsed : DEFAULT_CATEGORIES;
 }
 
-export function getCategories(): CategoryItem[] {
-  if (typeof window === "undefined") return DEFAULT_CATEGORIES;
-  try {
-    const raw = localStorage.getItem(CATEGORIES_KEY);
-    if (!raw) return DEFAULT_CATEGORIES;
-    return JSON.parse(raw);
-  } catch {
-    return DEFAULT_CATEGORIES;
-  }
+function parseAddons(value: unknown): GlobalAddon[] {
+  if (!Array.isArray(value)) return DEFAULT_GLOBAL_ADDONS;
+  const parsed = value.filter(
+    (item): item is GlobalAddon =>
+      isRecord(item) &&
+      typeof item["id"] === "string" &&
+      typeof item["name"] === "string" &&
+      typeof item["price"] === "number" &&
+      Number.isFinite(item["price"]) &&
+      item["price"] >= 0,
+  );
+  return parsed;
 }
 
-export function saveCategories(categories: CategoryItem[]) {
-  if (typeof window !== "undefined") {
-    localStorage.setItem(CATEGORIES_KEY, JSON.stringify(categories));
-    window.dispatchEvent(new Event("lbp_settings_updated"));
+export async function fetchStoreSettings(): Promise<StoreSettings> {
+  const { data, error } = await supabase
+    .from("store_settings")
+    .select("*")
+    .eq("id", 1)
+    .maybeSingle();
+
+  if (error || !data) {
+    if (error) console.warn("[Settings] Could not load store settings:", error.message);
+    return {
+      system: DEFAULT_SETTINGS,
+      categories: DEFAULT_CATEGORIES,
+      globalAddons: DEFAULT_GLOBAL_ADDONS,
+    };
   }
+
+  const paymentMethods = isRecord(data.payment_methods)
+    ? {
+        pix: data.payment_methods["pix"] !== false,
+        dinheiro: data.payment_methods["dinheiro"] !== false,
+        cartao: data.payment_methods["cartao"] !== false,
+      }
+    : DEFAULT_SETTINGS.paymentMethods;
+
+  return {
+    system: {
+      name: data.name,
+      tagline: data.tagline,
+      whatsapp: data.whatsapp,
+      whatsappDisplay: data.whatsapp_display,
+      deliveryFee: Number(data.delivery_fee),
+      minOrder: Number(data.min_order),
+      openHour: data.open_hour,
+      closeHour: data.close_hour,
+      paymentMethods,
+    },
+    categories: parseCategories(data.categories),
+    globalAddons: parseAddons(data.global_addons),
+  };
 }
 
-export function getGlobalAddons(): GlobalAddon[] {
-  if (typeof window === "undefined") return DEFAULT_GLOBAL_ADDONS;
-  try {
-    const raw = localStorage.getItem(ADDONS_KEY);
-    if (!raw) return DEFAULT_GLOBAL_ADDONS;
-    return JSON.parse(raw);
-  } catch {
-    return DEFAULT_GLOBAL_ADDONS;
-  }
-}
+export const storeSettingsQueryOptions = queryOptions({
+  queryKey: SETTINGS_QUERY_KEY,
+  queryFn: fetchStoreSettings,
+  staleTime: 60_000,
+});
 
-export function saveGlobalAddons(addons: GlobalAddon[]) {
-  if (typeof window !== "undefined") {
-    localStorage.setItem(ADDONS_KEY, JSON.stringify(addons));
-    window.dispatchEvent(new Event("lbp_settings_updated"));
-  }
+export function useStoreSettings() {
+  return useQuery(storeSettingsQueryOptions);
 }
 
 export function useSystemSettings() {
-  const [settings, setSettings] = useState<SystemSettings>(DEFAULT_SETTINGS);
-
-  useEffect(() => {
-    setSettings(getSystemSettings());
-    const handleUpdate = () => setSettings(getSystemSettings());
-    window.addEventListener("lbp_settings_updated", handleUpdate);
-    window.addEventListener("storage", handleUpdate);
-    return () => {
-      window.removeEventListener("lbp_settings_updated", handleUpdate);
-      window.removeEventListener("storage", handleUpdate);
-    };
-  }, []);
-
-  return settings;
+  return useStoreSettings().data?.system ?? DEFAULT_SETTINGS;
 }
 
 export function useCategories() {
-  const [categories, setCategories] = useState<CategoryItem[]>(DEFAULT_CATEGORIES);
-
-  useEffect(() => {
-    setCategories(getCategories());
-    const handleUpdate = () => setCategories(getCategories());
-    window.addEventListener("lbp_settings_updated", handleUpdate);
-    window.addEventListener("storage", handleUpdate);
-    return () => {
-      window.removeEventListener("lbp_settings_updated", handleUpdate);
-      window.removeEventListener("storage", handleUpdate);
-    };
-  }, []);
-
-  return categories;
+  return useStoreSettings().data?.categories ?? DEFAULT_CATEGORIES;
 }
 
 export function useGlobalAddons() {
-  const [addons, setAddons] = useState<GlobalAddon[]>(DEFAULT_GLOBAL_ADDONS);
-
-  useEffect(() => {
-    setAddons(getGlobalAddons());
-    const handleUpdate = () => setAddons(getGlobalAddons());
-    window.addEventListener("lbp_settings_updated", handleUpdate);
-    window.addEventListener("storage", handleUpdate);
-    return () => {
-      window.removeEventListener("lbp_settings_updated", handleUpdate);
-      window.removeEventListener("storage", handleUpdate);
-    };
-  }, []);
-
-  return addons;
+  return useStoreSettings().data?.globalAddons ?? DEFAULT_GLOBAL_ADDONS;
 }

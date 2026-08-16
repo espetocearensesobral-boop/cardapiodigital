@@ -50,9 +50,76 @@ export type Database = {
         };
         Relationships: [];
       };
+      staff_users: {
+        Row: {
+          created_at: string;
+          role: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          role?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          role?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
+      store_settings: {
+        Row: {
+          categories: Json;
+          close_hour: number;
+          delivery_fee: number;
+          global_addons: Json;
+          id: number;
+          min_order: number;
+          name: string;
+          open_hour: number;
+          payment_methods: Json;
+          tagline: string;
+          updated_at: string;
+          whatsapp: string;
+          whatsapp_display: string;
+        };
+        Insert: {
+          categories?: Json;
+          close_hour?: number;
+          delivery_fee?: number;
+          global_addons?: Json;
+          id?: number;
+          min_order?: number;
+          name?: string;
+          open_hour?: number;
+          payment_methods?: Json;
+          tagline?: string;
+          updated_at?: string;
+          whatsapp?: string;
+          whatsapp_display?: string;
+        };
+        Update: {
+          categories?: Json;
+          close_hour?: number;
+          delivery_fee?: number;
+          global_addons?: Json;
+          id?: number;
+          min_order?: number;
+          name?: string;
+          open_hour?: number;
+          payment_methods?: Json;
+          tagline?: string;
+          updated_at?: string;
+          whatsapp?: string;
+          whatsapp_display?: string;
+        };
+        Relationships: [];
+      };
       orders: {
         Row: {
           change_for: string | null;
+          client_order_id: string | null;
           code: string;
           complement: string | null;
           created_at: string;
@@ -75,6 +142,7 @@ export type Database = {
         };
         Insert: {
           change_for?: string | null;
+          client_order_id?: string | null;
           code: string;
           complement?: string | null;
           created_at?: string;
@@ -97,6 +165,7 @@ export type Database = {
         };
         Update: {
           change_for?: string | null;
+          client_order_id?: string | null;
           code?: string;
           complement?: string | null;
           created_at?: string;

@@ -68,6 +68,10 @@ export function CartSheet({
               <img
                 src={line.item.image_url}
                 alt={line.item.name}
+                width={80}
+                height={80}
+                loading="lazy"
+                decoding="async"
                 className="size-20 shrink-0 rounded-xl object-cover"
               />
               <div className="min-w-0 flex-1">

@@ -44,7 +44,8 @@ export function DynamicHeroBanner() {
     return () => clearInterval(timer);
   }, [slides.length]);
 
-  const slide = slides[currentSlide];
+  const slide = slides[currentSlide] ?? slides[0];
+  if (!slide) return null;
   const Icon = slide.icon;
 
   return (

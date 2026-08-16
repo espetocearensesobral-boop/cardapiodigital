@@ -25,6 +25,17 @@ type Payment = "pix" | "dinheiro" | "cartao";
 const fieldClass =
   "w-full rounded-xl border border-border bg-muted px-3 py-3 text-sm outline-none transition-colors focus:border-primary focus:bg-card";
 
+function createClientOrderId() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (char) => {
+    const random = Math.random() * 16;
+    const value = char === "x" ? random : (random & 0x3) | 0x8;
+    return Math.floor(value).toString(16);
+  });
+}
+
 export function CheckoutSheet({ open, onClose, cart, notes, onSuccess }: Props) {
   const systemSettings = useSystemSettings();
   const [orderType, setOrderType] = useState<OrderType>("delivery");
@@ -40,6 +51,7 @@ export function CheckoutSheet({ open, onClose, cart, notes, onSuccess }: Props) 
     changeFor: "",
   });
   const [payment, setPayment] = useState<Payment>("pix");
+  const [clientOrderId, setClientOrderId] = useState(createClientOrderId);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const paymentOptions = useMemo(() => {
@@ -67,6 +79,7 @@ export function CheckoutSheet({ open, onClose, cart, notes, onSuccess }: Props) 
     mutationFn: async () =>
       submit({
         data: {
+          clientOrderId,
           customerName: form.customerName.trim(),
           phone: form.phone.trim(),
           orderType,
@@ -83,15 +96,17 @@ export function CheckoutSheet({ open, onClose, cart, notes, onSuccess }: Props) 
             : { tableNumber: form.tableNumber.trim() || undefined }),
           notes: notes.trim() || undefined,
           items: cart.map((line) => ({
-            name: line.item.name,
+            id: line.item.id,
             qty: line.qty,
-            unitPrice: line.unitPrice,
             addons: line.addons,
             obs: line.obs,
           })),
         },
       }),
-    onSuccess: (result) => onSuccess(result),
+    onSuccess: (result) => {
+      onSuccess(result);
+      setClientOrderId(createClientOrderId());
+    },
     onError: (error: Error) => toast.error(error.message || "Não foi possível enviar o pedido."),
   });
 

@@ -41,6 +41,7 @@ export function SuccessOverlay({ open, code, total, whatsappUrl, onNewOrder }: P
         return () => clearTimeout(timer);
       }
     }
+    return undefined;
   }, [open, whatsappUrl]);
 
   if (!open) return null;

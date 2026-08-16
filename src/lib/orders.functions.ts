@@ -1,10 +1,14 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-const addonSchema = z.object({ name: z.string().min(1), price: z.number().min(0) });
+const addonSchema = z.object({
+  name: z.string().trim().min(1).max(80),
+  price: z.number().finite().min(0),
+});
 
 const orderSchema = z
   .object({
+    clientOrderId: z.string().uuid(),
     customerName: z.string().trim().min(2, "Informe seu nome").max(80),
     phone: z.string().trim().min(10, "Informe um telefone válido").max(20),
     orderType: z.enum(["delivery", "local"]),
@@ -20,10 +24,9 @@ const orderSchema = z
     items: z
       .array(
         z.object({
-          name: z.string().min(1),
+          id: z.string().trim().min(1).max(80),
           qty: z.number().int().min(1).max(50),
-          unitPrice: z.number().min(0),
-          addons: z.array(addonSchema),
+          addons: z.array(addonSchema).max(30),
           obs: z.string().max(200),
         }),
       )
@@ -37,7 +40,7 @@ const orderSchema = z
   );
 
 export const placeOrder = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => orderSchema.parse(data))
+  .validator((data: unknown) => orderSchema.parse(data))
   .handler(async ({ data }) => {
     const { createOrder } = await import("./orders.server");
     return createOrder(data);

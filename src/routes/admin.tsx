@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useSuspenseQuery, useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import {
   Plus,
@@ -15,19 +16,28 @@ import {
   ShoppingBag,
   RefreshCw,
   FileText,
+  LogIn,
+  LogOut,
+  ShieldCheck,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  adminDeleteMenuItem,
+  adminListOrders,
+  adminSaveMenuItem,
+  adminSaveStoreSettings,
+  adminUpdateOrderStatus,
+} from "@/lib/admin.functions";
 import { menuQueryOptions, type MenuItem, type Addon } from "@/lib/menu";
 import { brl } from "@/lib/format";
 import { playNotificationSound } from "@/lib/sound";
 import {
   useSystemSettings,
-  saveSystemSettings,
   useCategories,
-  saveCategories,
   useGlobalAddons,
-  saveGlobalAddons,
+  storeSettingsQueryOptions,
   type SystemSettings,
   type GlobalAddon,
 } from "@/lib/settings";
@@ -61,9 +71,25 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 export const Route = createFileRoute("/admin")({
-  loader: ({ context }) => context.queryClient.ensureQueryData(menuQueryOptions),
+  loader: ({ context }) =>
+    Promise.all([
+      context.queryClient.ensureQueryData(menuQueryOptions),
+      context.queryClient.ensureQueryData(storeSettingsQueryOptions),
+    ]),
   component: AdminPage,
 });
+
+type OrderStatus =
+  "recebido" | "confirmado" | "em_preparo" | "saiu_entrega" | "concluido" | "cancelado";
+
+const ORDER_STATUS_OPTIONS: Array<{ value: OrderStatus; label: string }> = [
+  { value: "recebido", label: "Recebido" },
+  { value: "confirmado", label: "Confirmado" },
+  { value: "em_preparo", label: "Em preparo" },
+  { value: "saiu_entrega", label: "Saiu para entrega" },
+  { value: "concluido", label: "Concluído" },
+  { value: "cancelado", label: "Cancelado" },
+];
 
 interface DbOrder {
   id: string;
@@ -90,22 +116,137 @@ interface DbOrder {
   subtotal: number;
   delivery_fee: number;
   total: number;
+  status: OrderStatus;
   created_at: string;
 }
 
 function AdminPage() {
+  const access = useAdminAccess();
+
+  if (access.status === "loading") {
+    return <AdminAccessState title="Verificando acesso..." />;
+  }
+
+  if (access.status === "unauthenticated") {
+    return <AdminLogin onSignIn={access.signIn} error={access.error} />;
+  }
+
+  if (access.status === "unauthorized") {
+    return (
+      <AdminAccessState
+        title="Acesso não autorizado"
+        description={access.error ?? "Sua conta não possui permissão para acessar este painel."}
+        action={<Button onClick={() => void access.signOut()}>Sair</Button>}
+      />
+    );
+  }
+
+  return <AdminWorkspace onSignOut={access.signOut} />;
+}
+
+function AdminAccessState({
+  title,
+  description = "Aguarde enquanto validamos sua sessão.",
+  action,
+}: {
+  title: string;
+  description?: string;
+  action?: React.ReactNode;
+}) {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+      <div className="w-full max-w-md rounded-2xl border bg-card p-6 text-center shadow-card">
+        <ShieldCheck className="mx-auto size-10 text-primary" />
+        <h1 className="mt-4 text-xl font-bold">{title}</h1>
+        <p className="mt-2 text-sm text-muted-foreground">{description}</p>
+        {action ? <div className="mt-5">{action}</div> : null}
+      </div>
+    </div>
+  );
+}
+
+function AdminLogin({
+  onSignIn,
+  error,
+}: {
+  onSignIn: (email: string, password: string) => Promise<boolean>;
+  error: string | null;
+}) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setIsSubmitting(true);
+    await onSignIn(email, password);
+    setIsSubmitting(false);
+  }
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+      <form
+        onSubmit={handleSubmit}
+        className="w-full max-w-md rounded-2xl border bg-card p-6 shadow-card"
+      >
+        <div className="text-center">
+          <ShieldCheck className="mx-auto size-10 text-primary" />
+          <h1 className="mt-4 text-xl font-bold">Acesso administrativo</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Entre com uma conta autorizada da equipe.
+          </p>
+        </div>
+        <div className="mt-6 space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="admin-email">E-mail</Label>
+            <Input
+              id="admin-email"
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              required
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="admin-password">Senha</Label>
+            <Input
+              id="admin-password"
+              type="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              required
+            />
+          </div>
+          {error ? (
+            <p className="text-sm text-destructive" role="alert">
+              {error}
+            </p>
+          ) : null}
+          <Button type="submit" className="h-11 w-full gap-2" disabled={isSubmitting}>
+            <LogIn className="size-4" />
+            {isSubmitting ? "Entrando..." : "Entrar no painel"}
+          </Button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+function AdminWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
   const { data: menu } = useSuspenseQuery(menuQueryOptions);
   const queryClient = useQueryClient();
-
-  // Settings & Store State
   const systemSettings = useSystemSettings();
   const categories = useCategories();
   const globalAddons = useGlobalAddons();
+  const listOrders = useServerFn(adminListOrders);
+  const saveMenuItem = useServerFn(adminSaveMenuItem);
+  const deleteMenuItem = useServerFn(adminDeleteMenuItem);
+  const saveStoreSettings = useServerFn(adminSaveStoreSettings);
+  const updateOrderStatus = useServerFn(adminUpdateOrderStatus);
 
-  // Local state for System Form
   const [sysForm, setSysForm] = useState<SystemSettings>(systemSettings);
-
-  // Modals state
   const [editingItem, setEditingItem] = useState<Partial<MenuItem> | null>(null);
   const [isItemDialogOpen, setIsItemDialogOpen] = useState(false);
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
@@ -114,68 +255,84 @@ function AdminPage() {
   const [isAddonDialogOpen, setIsAddonDialogOpen] = useState(false);
   const [newAddonName, setNewAddonName] = useState("");
   const [newAddonPrice, setNewAddonPrice] = useState<number | "">("");
-
-  // Orders Cloud Database Query
   const [selectedOrderDetails, setSelectedOrderDetails] = useState<DbOrder | null>(null);
+
+  useEffect(() => {
+    setSysForm(systemSettings);
+  }, [systemSettings]);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel("admin-orders-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => {
+        void queryClient.invalidateQueries({ queryKey: ["cloud_orders_list"] });
+      })
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   const {
     data: cloudOrders = [],
     isLoading: isLoadingOrders,
     refetch: refetchOrders,
-  } = useQuery({
+  } = useQuery<DbOrder[]>({
     queryKey: ["cloud_orders_list"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("orders")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (error) {
-        console.warn("Could not load cloud orders:", error);
-        return [];
-      }
-      return (data || []) as unknown as DbOrder[];
-    },
+    queryFn: async () => (await listOrders()) as unknown as DbOrder[],
   });
 
-  // Product Save Mutation
   const saveMutation = useMutation({
-    mutationFn: async (item: Partial<MenuItem>) => {
-      const { id, ...rest } = item;
-      if (id && !id.match(/^\d+$/)) {
-        const { error } = await supabase.from("menu_items").update(rest).eq("id", id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from("menu_items").insert([rest as Omit<MenuItem, "id">]);
-        if (error) throw error;
-      }
-    },
+    mutationFn: async (item: Partial<MenuItem>) =>
+      saveMenuItem({
+        data: {
+          id: item.id,
+          name: item.name ?? "",
+          description: item.description ?? "",
+          price: item.price ?? 0,
+          category: item.category ?? categories[0]?.id ?? "tradicional",
+          image_url: item.image_url ?? "",
+          badge: item.badge ?? null,
+          addons: item.addons ?? [],
+          available: item.available ?? true,
+          sort_order: item.sort_order ?? menu.length + 1,
+        },
+      }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["menu"] });
+      void queryClient.invalidateQueries({ queryKey: ["menu"] });
       toast.success("Produto salvo com sucesso!");
       playNotificationSound();
       setIsItemDialogOpen(false);
       setEditingItem(null);
     },
-    onError: (error) => {
-      toast.error(`Erro ao salvar: ${error.message}`);
-    },
+    onError: (error: Error) => toast.error(error.message),
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("menu_items").delete().eq("id", id);
-      if (error) throw error;
-    },
+    mutationFn: (id: string) => deleteMenuItem({ data: { id } }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["menu"] });
+      void queryClient.invalidateQueries({ queryKey: ["menu"] });
       toast.success("Produto removido!");
       playNotificationSound();
     },
-    onError: (error) => {
-      toast.error(`Erro ao remover: ${error.message}`);
-    },
+    onError: (error: Error) => toast.error(error.message),
   });
+
+  async function persistSettings(
+    nextSystem: SystemSettings = systemSettings,
+    nextCategories = categories,
+    nextAddons = globalAddons,
+  ) {
+    await saveStoreSettings({
+      data: {
+        ...nextSystem,
+        categories: nextCategories,
+        globalAddons: nextAddons,
+      },
+    });
+    await queryClient.invalidateQueries({ queryKey: ["store-settings"] });
+  }
 
   const handleEditItem = (item: MenuItem) => {
     setEditingItem({ ...item });
@@ -198,65 +355,88 @@ function AdminPage() {
   };
 
   const handleDeleteItem = (id: string) => {
-    if (confirm("Tem certeza que deseja excluir este produto?")) {
-      deleteMutation.mutate(id);
-    }
+    if (window.confirm("Tem certeza que deseja excluir este produto?")) deleteMutation.mutate(id);
   };
 
-  // Category Actions
-  const handleAddCategory = () => {
+  const handleAddCategory = async () => {
     if (!newCatLabel.trim()) return;
     const slug = newCatLabel
       .toLowerCase()
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^a-z0-9]/g, "-");
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "");
     const updated = [...categories, { id: slug, label: newCatLabel.trim(), emoji: newCatEmoji }];
-    saveCategories(updated);
-    setNewCatLabel("");
-    toast.success("Categoria adicionada!");
-    playNotificationSound();
+    try {
+      await persistSettings(systemSettings, updated, globalAddons);
+      setNewCatLabel("");
+      toast.success("Categoria adicionada!");
+      playNotificationSound();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível salvar a categoria.");
+    }
   };
 
-  const handleDeleteCategory = (id: string) => {
+  const handleDeleteCategory = async (id: string) => {
     if (categories.length <= 1) {
       toast.error("É necessário ter pelo menos uma categoria.");
       return;
     }
-    const updated = categories.filter((c) => c.id !== id);
-    saveCategories(updated);
-    toast.success("Categoria removida!");
-    playNotificationSound();
+    try {
+      await persistSettings(
+        systemSettings,
+        categories.filter((c) => c.id !== id),
+        globalAddons,
+      );
+      toast.success("Categoria removida!");
+      playNotificationSound();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível remover a categoria.");
+    }
   };
 
-  // Addon Actions
-  const handleAddAddon = () => {
-    if (!newAddonName.trim() || newAddonPrice === "") return;
+  const handleAddAddon = async () => {
+    if (!newAddonName.trim() || newAddonPrice === "" || !Number.isFinite(newAddonPrice)) return;
     const newAddon: GlobalAddon = {
-      id: String(Date.now()),
+      id: crypto.randomUUID(),
       name: newAddonName.trim(),
       price: Number(newAddonPrice),
     };
-    const updated = [...globalAddons, newAddon];
-    saveGlobalAddons(updated);
-    setNewAddonName("");
-    setNewAddonPrice("");
-    toast.success("Adicional/Borda salvo!");
-    playNotificationSound();
+    try {
+      await persistSettings(systemSettings, categories, [...globalAddons, newAddon]);
+      setNewAddonName("");
+      setNewAddonPrice("");
+      toast.success("Adicional/Borda salvo!");
+      playNotificationSound();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível salvar o adicional.");
+    }
   };
 
-  const handleDeleteAddon = (id: string) => {
-    const updated = globalAddons.filter((a) => a.id !== id);
-    saveGlobalAddons(updated);
-    toast.success("Adicional removido!");
-    playNotificationSound();
+  const handleDeleteAddon = async (id: string) => {
+    try {
+      await persistSettings(
+        systemSettings,
+        categories,
+        globalAddons.filter((a) => a.id !== id),
+      );
+      toast.success("Adicional removido!");
+      playNotificationSound();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível remover o adicional.");
+    }
   };
 
-  // System Settings Save
-  const handleSaveSystemSettings = () => {
-    saveSystemSettings(sysForm);
-    toast.success("Configurações do sistema salvas com sucesso!");
-    playNotificationSound();
+  const handleSaveSystemSettings = async () => {
+    try {
+      await persistSettings(sysForm, categories, globalAddons);
+      toast.success("Configurações do sistema salvas com sucesso!");
+      playNotificationSound();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Não foi possível salvar as configurações.",
+      );
+    }
   };
 
   return (
@@ -279,6 +459,15 @@ function AdminPage() {
             </p>
           </div>
         </div>
+        <Button
+          type="button"
+          variant="outline"
+          className="h-10 gap-2 self-end sm:self-auto"
+          onClick={() => void onSignOut()}
+        >
+          <LogOut className="size-4" />
+          Sair
+        </Button>
       </header>
 
       <Tabs defaultValue="produtos" className="w-full">
@@ -568,6 +757,10 @@ function AdminPage() {
                       <span className="rounded bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary capitalize">
                         {ord.payment_method || "—"}
                       </span>
+                      <span className="rounded bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-700 dark:text-amber-300">
+                        {ORDER_STATUS_OPTIONS.find((option) => option.value === ord.status)
+                          ?.label ?? ord.status}
+                      </span>
                     </div>
 
                     <Button
@@ -594,6 +787,7 @@ function AdminPage() {
                   <TableHead>Cliente</TableHead>
                   <TableHead>Tipo</TableHead>
                   <TableHead>Pagamento</TableHead>
+                  <TableHead>Status</TableHead>
                   <TableHead>Total</TableHead>
                   <TableHead className="text-right">Comprovante</TableHead>
                 </TableRow>
@@ -601,7 +795,7 @@ function AdminPage() {
               <TableBody>
                 {cloudOrders.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                       {isLoadingOrders
                         ? "Carregando pedidos da nuvem..."
                         : "Nenhum pedido gravado no banco de dados até o momento."}
@@ -624,6 +818,12 @@ function AdminPage() {
                         {ord.order_type === "delivery" ? "🛵 Entrega" : "🍽 Local"}
                       </TableCell>
                       <TableCell className="capitalize">{ord.payment_method || "—"}</TableCell>
+                      <TableCell>
+                        <span className="rounded bg-amber-500/10 px-2 py-0.5 text-xs font-semibold text-amber-700 dark:text-amber-300">
+                          {ORDER_STATUS_OPTIONS.find((option) => option.value === ord.status)
+                            ?.label ?? ord.status}
+                        </span>
+                      </TableCell>
                       <TableCell className="font-semibold">{brl(Number(ord.total))}</TableCell>
                       <TableCell className="text-right">
                         <Button
@@ -1135,9 +1335,45 @@ function AdminPage() {
           {selectedOrderDetails && (
             <div className="space-y-4 py-2 text-sm font-sans">
               <div className="rounded-xl border bg-muted/50 p-3 space-y-1.5 text-xs">
+                <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
+                  <strong className="text-foreground">Status do pedido</strong>
+                  <Select
+                    value={selectedOrderDetails.status}
+                    onValueChange={async (value) => {
+                      try {
+                        await updateOrderStatus({
+                          data: { id: selectedOrderDetails.id, status: value as OrderStatus },
+                        });
+                        setSelectedOrderDetails({
+                          ...selectedOrderDetails,
+                          status: value as OrderStatus,
+                        });
+                        await refetchOrders();
+                        toast.success("Status do pedido atualizado.");
+                      } catch (error) {
+                        toast.error(
+                          error instanceof Error
+                            ? error.message
+                            : "Não foi possível atualizar o status.",
+                        );
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="h-9 w-full sm:w-48" aria-label="Status do pedido">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ORDER_STATUS_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div>
                   <strong className="text-foreground">Cliente:</strong>{" "}
-                  {selectedOrderDetails.customer_name} ({selectedOrderDetails.phone})
+                  {selectedOrderDetails.customer_name} ({selectedOrderDetails.phone || "—"})
                 </div>
                 <div>
                   <strong className="text-foreground">Data/Hora:</strong>{" "}

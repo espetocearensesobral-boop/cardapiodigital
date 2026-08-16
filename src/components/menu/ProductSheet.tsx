@@ -55,7 +55,15 @@ export function ProductSheet({ item, open, onClose, onAdd }: Props) {
       }
     >
       <div className="relative">
-        <img src={item.image_url} alt={item.name} className="aspect-[16/10] w-full object-cover" />
+        <img
+          src={item.image_url}
+          alt={item.name}
+          width={600}
+          height={375}
+          loading="lazy"
+          decoding="async"
+          className="aspect-[16/10] w-full object-cover"
+        />
         <button
           type="button"
           onClick={onClose}
