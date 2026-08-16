@@ -178,7 +178,7 @@ export function CheckoutSheet({ open, onClose, cart, notes, onSuccess }: Props) 
       open={open}
       onClose={onClose}
       title="Finalizar pedido"
-      className="h-[92vh] md:h-[min(92vh,760px)]"
+      className="h-[92dvh] md:h-[min(92dvh,760px)]"
       footer={
         <button
           type="button"

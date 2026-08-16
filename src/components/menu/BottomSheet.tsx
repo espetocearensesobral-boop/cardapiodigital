@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { X } from "lucide-react";
 
 type Props = {
@@ -11,13 +11,44 @@ type Props = {
 };
 
 export function BottomSheet({ open, onClose, title, children, footer, className }: Props) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (!open) return;
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    const focusTimer = window.setTimeout(() => {
+      const firstFocusable = dialogRef.current?.querySelector<HTMLElement>(
+        'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [href], [tabindex]:not([tabindex="-1"])',
+      );
+      firstFocusable?.focus();
+    }, 0);
+    const onKey = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onClose();
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const focusables = Array.from(
+        dialogRef.current?.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [href], [tabindex]:not([tabindex="-1"])',
+        ) ?? [],
+      );
+      if (focusables.length === 0) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (!first || !last) return;
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
     window.addEventListener("keydown", onKey);
     return () => {
+      window.clearTimeout(focusTimer);
       document.body.style.overflow = previous;
       window.removeEventListener("keydown", onKey);
     };
@@ -32,10 +63,12 @@ export function BottomSheet({ open, onClose, title, children, footer, className 
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
-        aria-label={title}
-        className={`flex max-h-[92vh] w-full max-w-[480px] flex-col overflow-hidden rounded-t-3xl bg-card shadow-float transition-transform duration-300 [transition-timing-function:cubic-bezier(0.32,0.72,0,1)] md:max-w-2xl md:rounded-3xl lg:max-w-4xl ${className ?? ""} ${
+        aria-label={title ?? "Janela"}
+        tabIndex={-1}
+        className={`flex max-h-[92dvh] w-full max-w-[480px] flex-col overflow-hidden rounded-t-3xl bg-card shadow-float transition-transform duration-300 [transition-timing-function:cubic-bezier(0.32,0.72,0,1)] md:max-w-2xl md:rounded-3xl lg:max-w-4xl ${className ?? ""} ${
           open ? "translate-y-0" : "translate-y-full"
         }`}
       >

@@ -17,3 +17,9 @@ No preview Nitro de produção, a rota pública respondeu HTTP 200 e renderizou 
 O CTA flutuante continuou funcionando após a adição rápida de uma pizza. O carrinho abriu em diálogo centralizado com subtotal de R$ 40,00 e botão Continuar disponível, sem alteração da função específica do carrinho que foi deixada para depois.
 
 No checkout, os modos Entrega e No local usam o mesmo espaço vertical do modal, com rolagem interna para informações adicionais. O campo Número aparece como entrada textual com teclado numérico e sanitização somente de dígitos. Ao selecionar Dinheiro, o campo Troco para quanto? apareceu e recebeu foco automaticamente; o preenchimento de 50 foi mantido.
+
+## PWA
+
+O preview Nitro respondeu HTTP 200 para a rota raiz, entregou o `manifest.json` com ícones 192/512 e entregou `sw.js` com content-type JavaScript. No navegador, o manifest foi encontrado em `/manifest.json`, o contexto seguro estava ativo, o service worker `http://localhost:3011/sw.js` estava controlando a página e a altura da viewport visual foi detectada para sincronização com o teclado.
+
+A página exibiu o prompt de instalação do cardápio no preview. Ao abrir o modal de produto, o foco inicial foi direcionado ao botão `Fechar`, o diálogo foi identificado com `role=dialog` e o controle está dentro do modal, sem deixar o foco atrás da camada.

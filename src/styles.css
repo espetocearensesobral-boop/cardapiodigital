@@ -58,6 +58,7 @@
 
 :root {
   --radius: 0.875rem;
+  --app-viewport-height: 100dvh;
 
   --background: oklch(0.975 0.004 80);
   --foreground: oklch(0.22 0.01 40);
@@ -183,14 +184,26 @@
   }
 
   html {
+    min-height: 100%;
+    overflow-x: hidden;
+    overscroll-behavior-x: none;
     scroll-behavior: smooth;
   }
 
   body {
+    min-height: var(--app-viewport-height, 100dvh);
+    overflow-x: hidden;
+    overscroll-behavior-x: none;
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
+  }
+
+  button,
+  a,
+  [role="button"] {
+    touch-action: manipulation;
   }
 
   h1,
@@ -198,6 +211,14 @@
   h3,
   h4 {
     font-family: var(--font-display);
+  }
+}
+
+@media (max-width: 767px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px;
   }
 }
 
