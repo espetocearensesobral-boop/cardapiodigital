@@ -1,10 +1,12 @@
 # Banco de dados Supabase
 
-As migrations devem ser executadas nesta ordem:
+Para uma instalação normal via Supabase CLI, as migrations devem ser executadas nesta ordem:
 
 1. `20260801014003_e3bcf0b7-145d-4d4b-a5b2-69cdb89cd279.sql`
 2. `20260816190000_secure_admin_and_store_settings.sql`
 3. `20260816193000_complete_catalog_and_order_schema.sql`
+
+A terceira migration foi tornada autossuficiente: se você estiver usando o SQL Editor em um projeto totalmente vazio, pode executar somente `20260816193000_complete_catalog_and_order_schema.sql`. Ela cria as tabelas-base, policies, seeds e estruturas complementares antes de aplicar os upgrades.
 
 ## Aplicação via Supabase CLI
 
@@ -20,7 +22,7 @@ Se o projeto já estiver vinculado, basta executar `supabase db push`.
 
 ## Aplicação via SQL Editor
 
-No SQL Editor do Supabase, execute os três arquivos integralmente na ordem acima. Não execute a segunda ou a terceira migration antes da primeira, pois elas dependem das tabelas `menu_items` e `orders`.
+No SQL Editor do Supabase, execute os três arquivos integralmente na ordem acima. Como alternativa para um projeto vazio, execute somente a terceira migration, que contém o bootstrap completo. Não combine a terceira migration com um script parcialmente executado; se uma execução anterior falhar, corrija o estado ou reinicie o projeto antes de repetir.
 
 ## Primeiro administrador
 

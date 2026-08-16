@@ -3,6 +3,162 @@
 
 create extension if not exists pgcrypto;
 
+-- Bootstrap objects so this migration can be applied to an empty Supabase project.
+create table if not exists public.menu_items (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  description text not null default '',
+  price numeric(10, 2) not null check (price >= 0),
+  category text not null,
+  image_url text not null default '',
+  badge text,
+  addons jsonb not null default '[]'::jsonb,
+  available boolean not null default true,
+  sort_order integer not null default 0,
+  created_at timestamptz not null default now()
+);
+
+grant select on public.menu_items to anon, authenticated;
+grant all on public.menu_items to service_role;
+alter table public.menu_items enable row level security;
+drop policy if exists "Menu is public" on public.menu_items;
+create policy "Menu is public"
+  on public.menu_items for select to anon, authenticated
+  using (true);
+
+insert into public.menu_items (name, description, price, category, image_url, badge, addons, sort_order)
+select seed.name, seed.description, seed.price, seed.category, seed.image_url, seed.badge, seed.addons::jsonb, seed.sort_order
+from (values
+  ('Espetinho de Carne', 'Carne bovina suculenta na brasa, tempero especial da casa', 10.00, 'espetinhos', 'https://images.unsplash.com/photo-1544025162-d76694265947?w=600&h=600&fit=crop', 'Mais Vendido', '[{"name":"Bacon","price":3},{"name":"Queijo","price":2.5},{"name":"Cheddar","price":3.5}]', 1),
+  ('Espetinho de Frango', 'Peito de frango temperado e grelhado na brasa', 9.00, 'espetinhos', 'https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?w=600&h=600&fit=crop', null, '[{"name":"Bacon","price":3},{"name":"Queijo","price":2.5}]', 2),
+  ('Espetinho Misto', 'Carne e frango no mesmo espeto, a melhor combinação', 10.50, 'espetinhos', 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=600&h=600&fit=crop', null, '[{"name":"Bacon","price":3},{"name":"Queijo","price":2.5}]', 3),
+  ('Picanha na Brasa', 'Picanha premium fatiada, 400g de pura suculência', 89.90, 'carnes', 'https://images.unsplash.com/photo-1546833998-877b37c2e5c4?w=600&h=600&fit=crop', 'Premium', '[{"name":"Farofa Especial","price":5},{"name":"Vinagrete","price":4}]', 4),
+  ('Costela de Porco', 'Costela suína assada lentamente, desfiando no garfo', 69.90, 'carnes', 'https://images.unsplash.com/photo-1432139555190-58524dae6a55?w=600&h=600&fit=crop', null, '[{"name":"Molho Barbecue","price":3},{"name":"Farofa","price":5}]', 5),
+  ('Coração de Frango', 'Corações selecionados, tempero leve e suculentos', 12.00, 'frango', 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=600&h=600&fit=crop', 'Top', '[{"name":"Limão","price":1},{"name":"Pimenta","price":1.5}]', 6),
+  ('Coxinha da Asa', 'Coxinhas de asa crocantes por fora, macias por dentro', 11.00, 'frango', 'https://images.unsplash.com/photo-1527477396000-e27163b481c2?w=600&h=600&fit=crop', null, '[{"name":"Molho Rosé","price":2}]', 7),
+  ('Queijo Coalho', 'Queijo coalho na brasa, clássico e irresistível', 14.00, 'queijos', 'https://images.unsplash.com/photo-1563729768-6af784d6df1d?w=600&h=600&fit=crop', null, '[{"name":"Orégano","price":1},{"name":"Mel","price":2}]', 8),
+  ('Medalhão de Carne', 'Carne envolta em bacon, recheada com queijo', 16.00, 'medalhoes', 'https://images.unsplash.com/photo-1558030006-450675393462?w=600&h=600&fit=crop', 'Novo', '[{"name":"Queijo Extra","price":3},{"name":"Bacon Extra","price":3.5}]', 9),
+  ('Medalhão de Frango', 'Frango com cream cheese envolto em bacon', 15.00, 'medalhoes', 'https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?w=600&h=600&fit=crop', null, '[{"name":"Cheddar","price":3}]', 10),
+  ('Coca-Cola 350ml', 'Lata gelada', 6.00, 'bebidas', 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=600&h=600&fit=crop', null, '[]', 11),
+  ('Guaraná Antarctica', 'Lata 350ml', 5.50, 'bebidas', 'https://images.unsplash.com/photo-1625772299848-391b6a87d7b3?w=600&h=600&fit=crop', null, '[]', 12),
+  ('Batata Frita', 'Porção generosa, crocante e dourada', 18.00, 'acompanhamentos', 'https://images.unsplash.com/photo-1630384060421-cb20d0e0649d?w=600&h=600&fit=crop', null, '[{"name":"Bacon","price":5},{"name":"Cheddar","price":4}]', 13),
+  ('Pão de Alho', 'Pão artesanal com manteiga de alho e ervas', 8.00, 'acompanhamentos', 'https://images.unsplash.com/photo-1573140247632-f8fd74997d5c?w=600&h=600&fit=crop', null, '[]', 14),
+  ('Pudim de Leite', 'Pudim cremoso com calda de caramelo', 12.00, 'sobremesas', 'https://images.unsplash.com/photo-1470124182917-cc6e71b22ecc?w=600&h=600&fit=crop', null, '[]', 15),
+  ('Mousse de Maracujá', 'Mousse aerado com calda de maracujá', 10.00, 'sobremesas', 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=600&h=600&fit=crop', null, '[]', 16)
+) as seed(name, description, price, category, image_url, badge, addons, sort_order)
+where not exists (select 1 from public.menu_items);
+
+create table if not exists public.orders (
+  id uuid primary key default gen_random_uuid(),
+  code text not null unique,
+  client_order_id uuid,
+  customer_name text not null,
+  phone text,
+  order_type text not null check (order_type in ('delivery', 'local')),
+  street text,
+  number text,
+  complement text,
+  neighborhood text,
+  reference text,
+  table_number text,
+  payment_method text,
+  change_for text,
+  items jsonb not null,
+  notes text,
+  subtotal numeric(10, 2) not null,
+  delivery_fee numeric(10, 2) not null default 0,
+  total numeric(10, 2) not null,
+  status text not null default 'recebido',
+  created_at timestamptz not null default now()
+);
+
+grant select, update on public.orders to authenticated;
+grant all on public.orders to service_role;
+alter table public.orders enable row level security;
+
+create table if not exists public.staff_users (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  role text not null default 'staff' check (role in ('staff', 'admin')),
+  created_at timestamptz not null default now()
+);
+
+grant select on public.staff_users to authenticated;
+revoke all on public.staff_users from anon;
+alter table public.staff_users enable row level security;
+drop policy if exists "Staff can view own membership" on public.staff_users;
+create policy "Staff can view own membership"
+  on public.staff_users for select to authenticated
+  using (user_id = auth.uid());
+
+create or replace function public.is_staff()
+returns boolean
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select exists (
+    select 1 from public.staff_users
+    where user_id = auth.uid() and role in ('staff', 'admin')
+  );
+$$;
+revoke all on function public.is_staff() from public;
+grant execute on function public.is_staff() to authenticated;
+
+create table if not exists public.store_settings (
+  id integer primary key default 1 check (id = 1),
+  name text not null default 'La Bella Pizza',
+  tagline text not null default 'A melhor pizza da região • Delivery e local',
+  whatsapp text not null default '5588998340085',
+  whatsapp_display text not null default '(88) 99834-0085',
+  delivery_fee numeric(10, 2) not null default 5 check (delivery_fee >= 0),
+  min_order numeric(10, 2) not null default 30 check (min_order >= 0),
+  open_hour integer not null default 18 check (open_hour between 0 and 23),
+  close_hour integer not null default 23 check (close_hour between 0 and 23),
+  payment_methods jsonb not null default '{"pix":true,"dinheiro":true,"cartao":true}'::jsonb,
+  categories jsonb not null default '[]'::jsonb,
+  global_addons jsonb not null default '[]'::jsonb,
+  updated_at timestamptz not null default now()
+);
+
+insert into public.store_settings (id, categories, global_addons)
+values (
+  1,
+  '[{"id":"tradicional","label":"Tradicional","emoji":"🍕"},{"id":"especial","label":"Especial","emoji":"🌟"},{"id":"doce","label":"Doce","emoji":"🍫"},{"id":"bebidas","label":"Bebidas","emoji":"🥤"},{"id":"acompanhamentos","label":"Acompanhamentos","emoji":"🍟"},{"id":"sobremesas","label":"Sobremesas","emoji":"🍮"}]'::jsonb,
+  '[{"id":"1","name":"Requeijão Cremoso","price":6},{"id":"2","name":"Catupiry","price":8},{"id":"3","name":"Cheddar","price":6},{"id":"4","name":"Chocolate Harold","price":6},{"id":"5","name":"Bacon Extra","price":5},{"id":"6","name":"Extra Queijo","price":7}]'::jsonb
+)
+on conflict (id) do nothing;
+
+grant select on public.store_settings to anon, authenticated;
+grant update on public.store_settings to authenticated;
+grant all on public.store_settings to service_role;
+alter table public.store_settings enable row level security;
+drop policy if exists "Store settings are public" on public.store_settings;
+create policy "Store settings are public"
+  on public.store_settings for select to anon, authenticated
+  using (true);
+drop policy if exists "Staff can update store settings" on public.store_settings;
+create policy "Staff can update store settings"
+  on public.store_settings for update to authenticated
+  using (public.is_staff()) with check (public.is_staff());
+
+drop policy if exists "Staff can view orders" on public.orders;
+create policy "Staff can view orders"
+  on public.orders for select to authenticated
+  using (public.is_staff());
+drop policy if exists "Staff can update orders" on public.orders;
+create policy "Staff can update orders"
+  on public.orders for update to authenticated
+  using (public.is_staff()) with check (public.is_staff());
+revoke insert, delete on public.orders from anon, authenticated;
+
+drop policy if exists "Staff can manage menu" on public.menu_items;
+create policy "Staff can manage menu"
+  on public.menu_items for all to authenticated
+  using (public.is_staff()) with check (public.is_staff());
+
+drop trigger if exists store_settings_updated_at on public.store_settings;
+
 create or replace function public.touch_updated_at()
 returns trigger
 language plpgsql
