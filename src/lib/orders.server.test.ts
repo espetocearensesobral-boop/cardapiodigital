@@ -6,7 +6,6 @@ const mockState = {
     whatsapp: "5588998340085",
     delivery_fee: 5,
     min_order: 30,
-    accepting_orders: true,
     payment_methods: { pix: true, dinheiro: true, cartao: true },
   },
   menu: [
@@ -21,26 +20,33 @@ const mockState = {
   insertedOrders: [] as Array<Record<string, unknown>>,
 };
 
-const mockSql = async (strings: TemplateStringsArray, ...values: unknown[]) => {
-  const query = strings.join(" ").toLowerCase();
-  if (query.includes("from store_settings")) return [mockState.settings];
-  if (query.includes("from menu_items")) return mockState.menu;
-  if (query.includes("from orders where client_order_id")) return [];
-  if (query.includes("insert into orders")) {
-    mockState.insertedOrders.push({
-      code: values[0],
-      client_order_id: values[1],
-      subtotal: values[15],
-      delivery_fee: values[16],
-      total: values[17],
-    });
-    return [];
-  }
-  return [];
-};
+vi.mock("@/integrations/supabase/client.server", () => ({
+  supabaseAdmin: {
+    from(table: string) {
+      if (table === "store_settings") {
+        return {
+          select: () => ({
+            eq: () => ({ single: async () => ({ data: mockState.settings, error: null }) }),
+          }),
+        };
+      }
 
-vi.mock("@/lib/db.server", () => ({
-  getDb: () => mockSql,
+      if (table === "menu_items") {
+        return {
+          select: () => ({
+            in: async () => ({ data: mockState.menu, error: null }),
+          }),
+        };
+      }
+
+      return {
+        insert: async (order: Record<string, unknown>) => {
+          mockState.insertedOrders.push(order);
+          return { error: null };
+        },
+      };
+    },
+  },
 }));
 
 import { buildWhatsappMessage, createOrder } from "./orders.server";
@@ -48,6 +54,8 @@ import { buildWhatsappMessage, createOrder } from "./orders.server";
 describe("orders.server", () => {
   beforeEach(() => {
     mockState.insertedOrders.length = 0;
+    process.env["SUPABASE_URL"] = "https://example.supabase.co";
+    process.env["SUPABASE_SERVICE_ROLE_KEY"] = "test-service-role-key";
   });
 
   it("monta comprovante com adicionais discriminados", () => {

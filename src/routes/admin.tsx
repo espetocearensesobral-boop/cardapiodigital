@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
+import { supabase } from "@/integrations/supabase/client";
 import {
   adminDeleteMenuItem,
   adminListOrders,
@@ -128,6 +129,16 @@ function AdminPage() {
 
   if (access.status === "unauthenticated") {
     return <AdminLogin onSignIn={access.signIn} error={access.error} />;
+  }
+
+  if (access.status === "unauthorized") {
+    return (
+      <AdminAccessState
+        title="Acesso não autorizado"
+        description={access.error ?? "Sua conta não possui permissão para acessar este painel."}
+        action={<Button onClick={() => void access.signOut()}>Sair</Button>}
+      />
+    );
   }
 
   return <AdminWorkspace onSignOut={access.signOut} />;
@@ -250,6 +261,19 @@ function AdminWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
     setSysForm(systemSettings);
   }, [systemSettings]);
 
+  useEffect(() => {
+    const channel = supabase
+      .channel("admin-orders-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => {
+        void queryClient.invalidateQueries({ queryKey: ["cloud_orders_list"] });
+      })
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
   const {
     data: cloudOrders = [],
     isLoading: isLoadingOrders,
@@ -257,7 +281,6 @@ function AdminWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
   } = useQuery<DbOrder[]>({
     queryKey: ["cloud_orders_list"],
     queryFn: async () => (await listOrders()) as unknown as DbOrder[],
-    refetchInterval: 30_000,
   });
 
   const saveMutation = useMutation({

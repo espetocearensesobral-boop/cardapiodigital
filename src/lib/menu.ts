@@ -1,5 +1,5 @@
 import { queryOptions } from "@tanstack/react-query";
-import { getPublicMenu } from "@/lib/public-data.functions";
+import { supabase } from "@/integrations/supabase/client";
 
 export type Addon = { name: string; price: number };
 
@@ -257,21 +257,33 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
 ];
 
 export async function fetchMenu(): Promise<MenuItem[]> {
-  const rows = await getPublicMenu();
-  if (!rows.length) return DEFAULT_MENU_ITEMS;
+  try {
+    const { data, error } = await supabase
+      .from("menu_items")
+      .select("*")
+      .order("sort_order", { ascending: true });
 
-  return rows.map((row) => ({
-    id: row.id,
-    name: row.name,
-    description: row.description,
-    price: Number(row.price),
-    category: row.category,
-    image_url: row.image_url,
-    badge: row.badge,
-    addons: Array.isArray(row.addons) ? (row.addons as Addon[]) : [],
-    available: row.available,
-    sort_order: row.sort_order,
-  }));
+    if (error || !data || data.length === 0) {
+      console.warn("[Menu] Using default menu items fallback (Supabase unconfigured or offline)");
+      return DEFAULT_MENU_ITEMS;
+    }
+
+    return (data ?? []).map((row) => ({
+      id: row.id,
+      name: row.name,
+      description: row.description,
+      price: Number(row.price),
+      category: row.category,
+      image_url: row.image_url,
+      badge: row.badge,
+      addons: Array.isArray(row.addons) ? (row.addons as unknown as Addon[]) : [],
+      available: row.available,
+      sort_order: row.sort_order,
+    }));
+  } catch (err) {
+    console.warn("[Menu] Failed to fetch menu from Supabase, using default fallback:", err);
+    return DEFAULT_MENU_ITEMS;
+  }
 }
 
 export const menuQueryOptions = queryOptions({

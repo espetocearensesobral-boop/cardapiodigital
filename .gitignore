@@ -16,10 +16,7 @@ dist-ssr
 .nitro
 *.local
 
-# Vercel/Nitro build artifacts
-.vercel/
-
-# Wrangler / Cloudflare (legacy template artifacts)
+# Wrangler / Cloudflare
 .wrangler/
 .dev.vars
 
