@@ -459,15 +459,23 @@ function AdminWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
             </p>
           </div>
         </div>
-        <Button
-          type="button"
-          variant="outline"
-          className="h-10 gap-2 self-end sm:self-auto"
-          onClick={() => void onSignOut()}
-        >
-          <LogOut className="size-4" />
-          Sair
-        </Button>
+        <div className="flex items-center gap-2 self-end sm:self-auto">
+          <Button asChild type="button" variant="outline" className="h-10 gap-2">
+            <Link to="/pedidos">
+              <ShoppingBag className="size-4" />
+              Pedidos
+            </Link>
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="h-10 gap-2"
+            onClick={() => void onSignOut()}
+          >
+            <LogOut className="size-4" />
+            Sair
+          </Button>
+        </div>
       </header>
 
       <Tabs defaultValue="produtos" className="w-full">

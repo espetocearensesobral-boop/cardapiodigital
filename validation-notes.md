@@ -37,3 +37,7 @@ A mensagem de pedido foi reorganizada para usar formatação nativa do WhatsApp:
 ## Correção da validação do pedido
 
 O erro `Não foi possível validar o cardápio. Tente novamente.` ocorria porque a presença das variáveis Supabase ativava automaticamente a consulta externa, mesmo com o catálogo público ainda mockado. O serviço agora usa o catálogo mockado por padrão e só ativa Supabase quando `MOCK_DATA_MODE=false` estiver configurado explicitamente. O cenário com variáveis Supabase presentes e sem `MOCK_DATA_MODE` foi coberto por teste de regressão; o pedido foi confirmado e o link do WhatsApp foi gerado normalmente.
+
+## Central de pedidos `/pedidos`
+
+A nova rota respondeu HTTP 200 no preview Nitro/Vercel e renderizou o estado protegido de acesso quando não havia sessão autenticada. A tela informa que a central é exclusiva da equipe e direciona para o login administrativo, sem expor dados mockados publicamente. O dashboard e os controles mockados ficam disponíveis após a autenticação autorizada.
