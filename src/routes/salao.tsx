@@ -242,7 +242,7 @@ function SalonWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto w-full max-w-[1600px] px-4 py-4 sm:px-6 sm:py-6 lg:px-10 lg:py-8 xl:px-12">
+      <div className="mx-auto w-full max-w-[1600px] px-4 pb-4 pt-[calc(1rem+env(safe-area-inset-top))] sm:px-6 sm:py-6 lg:px-10 lg:py-8 xl:px-12">
         <header className="flex flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-start gap-3">
             <Link
@@ -269,7 +269,7 @@ function SalonWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
               </p>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2 pl-14 sm:pl-0">
+          <div className="flex w-full flex-wrap items-center gap-2 pl-14 sm:w-auto sm:pl-0">
             <Button asChild type="button" variant="outline" className="gap-2">
               <Link to="/pedidos">
                 <ShoppingBag className="size-4" /> Pedidos

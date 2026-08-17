@@ -1,4 +1,4 @@
-const CACHE_VERSION = "la-bella-pizza-pwa-v1";
+const CACHE_VERSION = "la-bella-pizza-pwa-v2";
 const STATIC_CACHE = `${CACHE_VERSION}:static`;
 const NAVIGATION_CACHE = `${CACHE_VERSION}:navigation`;
 const STATIC_ASSETS = [

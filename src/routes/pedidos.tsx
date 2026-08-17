@@ -202,7 +202,7 @@ function OrdersWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto w-full max-w-[1500px] px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
+      <div className="mx-auto w-full max-w-[1500px] px-4 pb-4 pt-[calc(1rem+env(safe-area-inset-top))] sm:px-6 sm:py-6 lg:px-8">
         <header className="flex flex-col gap-4 border-b border-border pb-5 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-start gap-3">
             <Link
@@ -229,7 +229,7 @@ function OrdersWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
               </p>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2 pl-14 lg:pl-0">
+          <div className="flex w-full flex-wrap items-center gap-2 pl-14 sm:w-auto lg:pl-0">
             <Button type="button" variant="outline" className="gap-2" onClick={restoreMocks}>
               <RefreshCw className="size-4" />
               Atualizar
@@ -339,7 +339,7 @@ function OrdersWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
                 </p>
               </div>
               <div className="flex flex-col gap-2 sm:flex-row">
-                <label className="relative block min-w-0 sm:min-w-64">
+                <label className="relative block min-w-0 sm:min-w-64 sm:flex-1">
                   <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                   <input
                     value={search}
@@ -349,7 +349,7 @@ function OrdersWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
                     aria-label="Buscar pedidos"
                   />
                 </label>
-                <div className="flex gap-2">
+                <div className="grid gap-2 sm:flex sm:flex-row">
                   <label className="sr-only" htmlFor="order-status-filter">
                     Filtrar por status
                   </label>
@@ -357,7 +357,7 @@ function OrdersWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
                     id="order-status-filter"
                     value={statusFilter}
                     onChange={(event) => setStatusFilter(event.target.value as "all" | OrderStatus)}
-                    className="h-11 min-w-36 rounded-xl border border-border bg-card px-3 text-sm outline-none focus:border-primary"
+                    className="h-11 w-full min-w-0 rounded-xl border border-border bg-card px-3 text-sm outline-none focus:border-primary sm:w-auto sm:min-w-36"
                   >
                     <option value="all">Todos os status</option>
                     {Object.entries(ORDER_STATUS_META).map(([status, meta]) => (
@@ -375,7 +375,7 @@ function OrdersWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
                     onChange={(event) =>
                       setTypeFilter(event.target.value as "all" | "delivery" | "local")
                     }
-                    className="h-11 min-w-32 rounded-xl border border-border bg-card px-3 text-sm outline-none focus:border-primary"
+                    className="h-11 w-full min-w-0 rounded-xl border border-border bg-card px-3 text-sm outline-none focus:border-primary sm:w-auto sm:min-w-32"
                   >
                     <option value="all">Todos os tipos</option>
                     <option value="delivery">Entrega</option>

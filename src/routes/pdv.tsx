@@ -289,7 +289,7 @@ function PdvWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto w-full max-w-[1600px] px-4 py-4 sm:px-6 sm:py-6 lg:px-10 lg:py-8 xl:px-12">
+      <div className="mx-auto w-full max-w-[1600px] px-4 pb-4 pt-[calc(1rem+env(safe-area-inset-top))] sm:px-6 sm:py-6 lg:px-10 lg:py-8 xl:px-12">
         <header className="flex flex-col gap-4 border-b border-border pb-5 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex items-start gap-3">
             <Link
@@ -316,23 +316,43 @@ function PdvWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
               </p>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2 pl-14 xl:pl-0">
-            <Button asChild type="button" variant="outline" className="gap-2">
+          <div className="flex w-full flex-wrap items-center gap-2 pl-14 sm:w-auto sm:pl-0">
+            <Button
+              asChild
+              type="button"
+              variant="outline"
+              className="flex-1 justify-center gap-2 sm:flex-none"
+            >
               <Link to="/salao">
                 <Store className="size-4" /> Salão
               </Link>
             </Button>
-            <Button asChild type="button" variant="outline" className="gap-2">
+            <Button
+              asChild
+              type="button"
+              variant="outline"
+              className="flex-1 justify-center gap-2 sm:flex-none"
+            >
               <Link to="/pedidos">
                 <ShoppingBag className="size-4" /> Pedidos
               </Link>
             </Button>
-            <Button asChild type="button" variant="outline" className="gap-2">
+            <Button
+              asChild
+              type="button"
+              variant="outline"
+              className="flex-1 justify-center gap-2 sm:flex-none"
+            >
               <Link to="/financeiro">
                 <BarChart3 className="size-4" /> Financeiro
               </Link>
             </Button>
-            <Button type="button" variant="outline" className="gap-2" onClick={resetMockSales}>
+            <Button
+              type="button"
+              variant="outline"
+              className="flex-1 justify-center gap-2 sm:flex-none"
+              onClick={resetMockSales}
+            >
               <RefreshCw className="size-4" /> Atualizar
             </Button>
             <Button type="button" variant="outline" onClick={() => void onSignOut()}>
@@ -655,7 +675,11 @@ function PdvWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
             <Button type="button" variant="outline" onClick={() => setIsProductDialogOpen(false)}>
               Cancelar
             </Button>
-            <Button type="button" onClick={confirmProduct} className="gap-2">
+            <Button
+              type="button"
+              onClick={confirmProduct}
+              className="flex-1 justify-center gap-2 sm:flex-none"
+            >
               <Plus className="size-4" /> Lançar na venda
             </Button>
           </DialogFooter>
@@ -745,7 +769,12 @@ function PdvWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
             <Button type="button" variant="outline" onClick={() => setIsPaymentOpen(false)}>
               Voltar
             </Button>
-            <Button type="button" className="gap-2" disabled={!canFinalize} onClick={finalizeSale}>
+            <Button
+              type="button"
+              className="flex-1 justify-center gap-2 sm:flex-none"
+              disabled={!canFinalize}
+              onClick={finalizeSale}
+            >
               <Check className="size-4" /> Finalizar venda
             </Button>
           </DialogFooter>

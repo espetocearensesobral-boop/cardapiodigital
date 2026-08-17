@@ -455,7 +455,7 @@ function AdminWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
   };
 
   return (
-    <div className="mx-auto min-h-screen w-full max-w-[1600px] bg-background px-3 py-4 sm:px-6 sm:py-6 lg:px-10 lg:py-8 xl:px-12">
+    <div className="mx-auto min-h-screen w-full max-w-[1600px] bg-background px-3 pb-4 pt-[calc(1rem+env(safe-area-inset-top))] sm:px-6 sm:py-6 lg:px-10 lg:py-8 xl:px-12">
       <header className="mb-5 flex flex-col gap-4 border-b border-border pb-5 sm:mb-7 sm:flex-row sm:items-center sm:justify-between lg:mb-8">
         <div className="flex items-center gap-3">
           <Link
@@ -474,26 +474,46 @@ function AdminWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2 self-end sm:self-auto">
-          <Button asChild type="button" variant="outline" className="h-10 gap-2">
+        <div className="flex w-full flex-wrap items-center justify-end gap-2 self-end sm:w-auto sm:flex-nowrap sm:self-auto">
+          <Button
+            asChild
+            type="button"
+            variant="outline"
+            className="h-10 flex-1 justify-center gap-2 sm:flex-none"
+          >
             <Link to="/pdv">
               <Calculator className="size-4" />
               PDV
             </Link>
           </Button>
-          <Button asChild type="button" variant="outline" className="h-10 gap-2">
+          <Button
+            asChild
+            type="button"
+            variant="outline"
+            className="h-10 flex-1 justify-center gap-2 sm:flex-none"
+          >
             <Link to="/pedidos">
               <ShoppingBag className="size-4" />
               Pedidos
             </Link>
           </Button>
-          <Button asChild type="button" variant="outline" className="h-10 gap-2">
+          <Button
+            asChild
+            type="button"
+            variant="outline"
+            className="h-10 flex-1 justify-center gap-2 sm:flex-none"
+          >
             <Link to="/financeiro">
               <BarChart3 className="size-4" />
               Financeiro
             </Link>
           </Button>
-          <Button asChild type="button" variant="outline" className="h-10 gap-2">
+          <Button
+            asChild
+            type="button"
+            variant="outline"
+            className="h-10 flex-1 justify-center gap-2 sm:flex-none"
+          >
             <Link to="/salao">
               <Armchair className="size-4" />
               Salão
@@ -502,7 +522,7 @@ function AdminWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
           <Button
             type="button"
             variant="outline"
-            className="h-10 gap-2"
+            className="h-10 flex-1 justify-center gap-2 sm:flex-none"
             onClick={() => void onSignOut()}
           >
             <LogOut className="size-4" />

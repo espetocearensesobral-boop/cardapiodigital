@@ -2,6 +2,8 @@ import { Download, WifiOff, X } from "lucide-react";
 
 import { useEffect, useState } from "react";
 
+const INSTALL_DISMISSED_KEY = "la-bella-pizza-pwa-install-dismissed";
+
 type InstallPromptEvent = Event & {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
@@ -11,6 +13,7 @@ export function PwaInstallPrompt() {
   const [installEvent, setInstallEvent] = useState<InstallPromptEvent | null>(null);
   const [offline, setOffline] = useState(false);
   const [dismissed, setDismissed] = useState(false);
+  const [standalone, setStandalone] = useState(false);
 
   useEffect(() => {
     const onBeforeInstall = (event: Event) => {
@@ -21,11 +24,26 @@ export function PwaInstallPrompt() {
     const onOffline = () => setOffline(true);
 
     setOffline(!navigator.onLine);
+    try {
+      setDismissed(window.localStorage.getItem(INSTALL_DISMISSED_KEY) === "true");
+    } catch {
+      // A instalação continua disponível mesmo se o storage estiver indisponível.
+    }
+    const standaloneMedia = window.matchMedia("(display-mode: standalone)");
+    const updateStandalone = () => {
+      const legacyStandalone = Boolean(
+        (navigator as Navigator & { standalone?: boolean }).standalone,
+      );
+      setStandalone(standaloneMedia.matches || legacyStandalone);
+    };
+    updateStandalone();
+    standaloneMedia.addEventListener("change", updateStandalone);
     window.addEventListener("beforeinstallprompt", onBeforeInstall);
     window.addEventListener("online", onOnline);
     window.addEventListener("offline", onOffline);
 
     return () => {
+      standaloneMedia.removeEventListener("change", updateStandalone);
       window.removeEventListener("beforeinstallprompt", onBeforeInstall);
       window.removeEventListener("online", onOnline);
       window.removeEventListener("offline", onOffline);
@@ -39,8 +57,17 @@ export function PwaInstallPrompt() {
     setInstallEvent(null);
   }
 
-  const showInstall = Boolean(installEvent) && !dismissed;
+  const showInstall = Boolean(installEvent) && !dismissed && !standalone;
   if (!offline && !showInstall) return null;
+
+  function dismissInstall() {
+    setDismissed(true);
+    try {
+      window.localStorage.setItem(INSTALL_DISMISSED_KEY, "true");
+    } catch {
+      // O aviso fica fechado durante a sessão mesmo sem persistência local.
+    }
+  }
 
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-0 z-[60] flex justify-center p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] md:items-end md:justify-end">
@@ -71,7 +98,7 @@ export function PwaInstallPrompt() {
           {showInstall ? (
             <button
               type="button"
-              onClick={() => setDismissed(true)}
+              onClick={dismissInstall}
               aria-label="Fechar aviso de instalação"
               className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground"
             >

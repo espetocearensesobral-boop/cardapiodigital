@@ -355,7 +355,7 @@ export function CheckoutSheet({ open, onClose, cart, notes, onSuccess }: Props) 
 
         {step === 1 ? (
           <div className="space-y-4" key="details-step">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {(
                 [
                   { value: "delivery", label: "Entrega", icon: Bike },
@@ -424,7 +424,7 @@ export function CheckoutSheet({ open, onClose, cart, notes, onSuccess }: Props) 
 
               {orderType === "delivery" ? (
                 <>
-                  <div className="grid grid-cols-[1fr_88px] gap-3">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_88px]">
                     <div>
                       <label className="mb-1.5 block text-xs font-semibold" htmlFor="input-rua">
                         Rua / Avenida <span className="text-destructive">*</span>
@@ -484,7 +484,7 @@ export function CheckoutSheet({ open, onClose, cart, notes, onSuccess }: Props) 
                     ) : null}
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div>
                       <label
                         className="mb-1.5 block text-xs font-semibold"
