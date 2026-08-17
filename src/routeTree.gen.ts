@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as FinanceiroRouteImport } from './routes/financeiro'
 import { Route as PedidosRouteImport } from './routes/pedidos'
+import { Route as SalaoRouteImport } from './routes/salao'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -34,18 +35,25 @@ const PedidosRoute = PedidosRouteImport.update({
   path: '/pedidos',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SalaoRoute = SalaoRouteImport.update({
+  id: '/salao',
+  path: '/salao',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/financeiro': typeof FinanceiroRoute
   '/pedidos': typeof PedidosRoute
+  '/salao': typeof SalaoRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/financeiro': typeof FinanceiroRoute
   '/pedidos': typeof PedidosRoute
+  '/salao': typeof SalaoRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -53,13 +61,14 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/financeiro': typeof FinanceiroRoute
   '/pedidos': typeof PedidosRoute
+  '/salao': typeof SalaoRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/admin' | '/financeiro' | '/pedidos'
+  fullPaths: '/' | '/admin' | '/financeiro' | '/pedidos' | '/salao'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin' | '/financeiro' | '/pedidos'
-  id: '__root__' | '/' | '/admin' | '/financeiro' | '/pedidos'
+  to: '/' | '/admin' | '/financeiro' | '/pedidos' | '/salao'
+  id: '__root__' | '/' | '/admin' | '/financeiro' | '/pedidos' | '/salao'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -67,6 +76,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   FinanceiroRoute: typeof FinanceiroRoute
   PedidosRoute: typeof PedidosRoute
+  SalaoRoute: typeof SalaoRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -99,6 +109,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PedidosRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/salao': {
+      id: '/salao'
+      path: '/salao'
+      fullPath: '/salao'
+      preLoaderRoute: typeof SalaoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -107,6 +124,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   FinanceiroRoute: FinanceiroRoute,
   PedidosRoute: PedidosRoute,
+  SalaoRoute: SalaoRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

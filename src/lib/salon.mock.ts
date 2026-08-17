@@ -1,0 +1,148 @@
+export type SalonTableStatus = "livre" | "ocupada" | "aguardando_pagamento";
+export type CommandStatus = "aberta" | "aguardando_pagamento";
+
+export type SalonCommandItem = {
+  id: string;
+  name: string;
+  qty: number;
+  unitPrice: number;
+  note?: string;
+};
+
+export type SalonCommand = {
+  id: string;
+  code: string;
+  tableId: string;
+  customerName?: string;
+  openedAt: string;
+  status: CommandStatus;
+  items: SalonCommandItem[];
+};
+
+export type SalonTable = {
+  id: string;
+  number: number;
+  seats: number;
+  status: SalonTableStatus;
+  command?: SalonCommand;
+};
+
+export const SALON_STATUS_META: Record<
+  SalonTableStatus,
+  { label: string; description: string; tone: "emerald" | "amber" | "violet" }
+> = {
+  livre: {
+    label: "Livre",
+    description: "Pronta para receber",
+    tone: "emerald",
+  },
+  ocupada: {
+    label: "Ocupada",
+    description: "Comanda em aberto",
+    tone: "violet",
+  },
+  aguardando_pagamento: {
+    label: "Aguardando pagamento",
+    description: "Fechar comanda",
+    tone: "amber",
+  },
+};
+
+export const MOCK_SALON_TABLES: SalonTable[] = [
+  {
+    id: "table-01",
+    number: 1,
+    seats: 2,
+    status: "ocupada",
+    command: {
+      id: "command-01",
+      code: "CMD-001",
+      tableId: "table-01",
+      customerName: "Família Silva",
+      openedAt: "2026-08-16T20:14:00-03:00",
+      status: "aberta",
+      items: [
+        { id: "pizza-mucarela", name: "Muçarela", qty: 1, unitPrice: 40 },
+        { id: "coca-2l", name: "Coca-Cola 2L", qty: 1, unitPrice: 14 },
+      ],
+    },
+  },
+  {
+    id: "table-02",
+    number: 2,
+    seats: 4,
+    status: "ocupada",
+    command: {
+      id: "command-02",
+      code: "CMD-002",
+      tableId: "table-02",
+      customerName: "Pedro e amigos",
+      openedAt: "2026-08-16T20:32:00-03:00",
+      status: "aberta",
+      items: [
+        { id: "pizza-calabresa", name: "Calabresa", qty: 1, unitPrice: 42.9 },
+        { id: "pizza-frango", name: "Frango com Catupiry", qty: 1, unitPrice: 45.9 },
+        { id: "guarana-2l", name: "Guaraná Antarctica 2L", qty: 1, unitPrice: 12 },
+      ],
+    },
+  },
+  {
+    id: "table-03",
+    number: 3,
+    seats: 4,
+    status: "aguardando_pagamento",
+    command: {
+      id: "command-03",
+      code: "CMD-003",
+      tableId: "table-03",
+      customerName: "Beatriz Lima",
+      openedAt: "2026-08-16T19:48:00-03:00",
+      status: "aguardando_pagamento",
+      items: [
+        { id: "pizza-portuguesa", name: "Portuguesa", qty: 1, unitPrice: 45.9 },
+        { id: "suco-laranja", name: "Suco de laranja", qty: 2, unitPrice: 8 },
+      ],
+    },
+  },
+  {
+    id: "table-04",
+    number: 4,
+    seats: 6,
+    status: "ocupada",
+    command: {
+      id: "command-04",
+      code: "CMD-004",
+      tableId: "table-04",
+      customerName: "Grupo Oliveira",
+      openedAt: "2026-08-16T20:50:00-03:00",
+      status: "aberta",
+      items: [
+        { id: "pizza-quatro-queijos", name: "Quatro Queijos", qty: 2, unitPrice: 42.9 },
+        { id: "pizza-pepperoni", name: "Pepperoni", qty: 1, unitPrice: 45.9 },
+      ],
+    },
+  },
+  { id: "table-05", number: 5, seats: 2, status: "livre" },
+  { id: "table-06", number: 6, seats: 2, status: "livre" },
+  { id: "table-07", number: 7, seats: 4, status: "livre" },
+  { id: "table-08", number: 8, seats: 4, status: "livre" },
+  { id: "table-09", number: 9, seats: 6, status: "livre" },
+  { id: "table-10", number: 10, seats: 2, status: "livre" },
+  { id: "table-11", number: 11, seats: 4, status: "livre" },
+  { id: "table-12", number: 12, seats: 6, status: "livre" },
+];
+
+export function salonCommandTotal(command?: SalonCommand) {
+  return command?.items.reduce((total, item) => total + item.qty * item.unitPrice, 0) ?? 0;
+}
+
+export function salonCommandItemCount(command?: SalonCommand) {
+  return command?.items.reduce((total, item) => total + item.qty, 0) ?? 0;
+}
+
+export function formatSalonTime(value: string) {
+  return new Date(value).toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
