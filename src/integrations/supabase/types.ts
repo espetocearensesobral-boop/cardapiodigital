@@ -41,6 +41,7 @@ export type Database = {
       global_addons: {
         Row: {
           active: boolean;
+          addon_group: string;
           created_at: string;
           id: string;
           name: string;
@@ -50,6 +51,7 @@ export type Database = {
         };
         Insert: {
           active?: boolean;
+          addon_group?: string;
           created_at?: string;
           id: string;
           name: string;
@@ -59,6 +61,7 @@ export type Database = {
         };
         Update: {
           active?: boolean;
+          addon_group?: string;
           created_at?: string;
           id?: string;
           name?: string;

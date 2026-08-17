@@ -90,7 +90,7 @@ describe("orders.server", () => {
     expect(message).toContain("*LA BELLA PIZZA*");
     expect(message).toContain("*ITENS DO PEDIDO*");
     expect(message).toContain("*1x Calabresa (M)*");
-    expect(message).toContain("_ADICIONAIS:_\n- Catupiry (+R$ 8,00)");
+    expect(message).toContain("_ADICIONAIS ADICIONADOS:_\n- Catupiry (+R$ 8,00)");
     expect(message).toContain("*PAGAMENTO:* PIX");
     expect(message).toContain("*TOTAL DO PEDIDO: R$ 53,00*");
     expect(message).not.toContain("\n\n\n");
@@ -152,7 +152,30 @@ describe("orders.server", () => {
     expect(result.code).toMatch(/^LBP-\d{6}$/);
     expect(result.total).toBe(17);
     expect(result.whatsappUrl).toContain("wa.me/5588998340085");
-    expect(decodeURIComponent(result.whatsappUrl)).toContain("_ADICIONAIS:_");
+    expect(decodeURIComponent(result.whatsappUrl)).toContain("_MISTURAS ADICIONADAS:_");
     expect(decodeURIComponent(result.whatsappUrl)).toContain("*TROCO PARA:* R$ 50,00");
+  });
+
+  it("exige a quantidade de proteínas definida pelo tamanho da quentinha", async () => {
+    process.env["MOCK_DATA_MODE"] = "true";
+    const promise = createOrder({
+      clientOrderId: "00000000-0000-4000-8000-000000000004",
+      customerName: "João Silva",
+      phone: "88999990000",
+      orderType: "local",
+      tableNumber: "Mesa 2",
+      paymentMethod: "pix",
+      items: [
+        {
+          id: "quentinha-g",
+          size: "G",
+          qty: 1,
+          addons: [{ name: "Strogonoff de carne", price: 0 }],
+          obs: "",
+        },
+      ],
+    });
+
+    await expect(promise).rejects.toThrow("Selecione 2 proteínas");
   });
 });

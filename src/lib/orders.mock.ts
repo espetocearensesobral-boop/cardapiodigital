@@ -7,6 +7,7 @@ export type PaymentMethod = "pix" | "dinheiro" | "cartao";
 export type MockOrderAddon = {
   name: string;
   price: number;
+  group?: "mistura" | "guarnicao" | "extra";
 };
 
 export type MockOrderItem = {
@@ -123,7 +124,7 @@ export const MOCK_ORDERS: AdminOrder[] = [
         size: "M",
         qty: 1,
         unitPrice: 16,
-        addons: [{ name: "Filé trinchado", price: 2 }],
+        addons: [{ name: "Filé trinchado", price: 2, group: "mistura" }],
       },
     ],
     subtotal: 16,
@@ -148,7 +149,7 @@ export const MOCK_ORDERS: AdminOrder[] = [
         size: "G",
         qty: 1,
         unitPrice: 20,
-        addons: [{ name: "Strogonoff de carne", price: 0 }],
+        addons: [{ name: "Strogonoff de carne", price: 0, group: "mistura" }],
       },
       {
         name: "Refrigerante 250 ml",
@@ -178,7 +179,7 @@ export const MOCK_ORDERS: AdminOrder[] = [
         size: "GG",
         qty: 1,
         unitPrice: 30,
-        addons: [{ name: "Galinha caipira ao molho com pirão", price: 0 }],
+        addons: [{ name: "Galinha caipira ao molho com pirão", price: 0, group: "mistura" }],
         obs: "Enviar bastante guarnição",
       },
       {
@@ -212,7 +213,7 @@ export const MOCK_ORDERS: AdminOrder[] = [
         size: "M",
         qty: 1,
         unitPrice: 16,
-        addons: [{ name: "Carne de panela com purê", price: 2 }],
+        addons: [{ name: "Carne de panela com purê", price: 2, group: "mistura" }],
       },
       {
         name: "Refrigerante 2 litros",
@@ -242,7 +243,7 @@ export const MOCK_ORDERS: AdminOrder[] = [
         size: "P",
         qty: 1,
         unitPrice: 12,
-        addons: [{ name: "Linguiça Toscana frita", price: 0 }],
+        addons: [{ name: "Linguiça Toscana frita", price: 0, group: "mistura" }],
       },
       {
         name: "Salada de legumes na maionese",
@@ -274,7 +275,7 @@ export const MOCK_ORDERS: AdminOrder[] = [
         size: "G",
         qty: 1,
         unitPrice: 20,
-        addons: [{ name: "Filé trinchado", price: 2 }],
+        addons: [{ name: "Filé trinchado", price: 2, group: "mistura" }],
       },
       {
         name: "Suco de goiaba",

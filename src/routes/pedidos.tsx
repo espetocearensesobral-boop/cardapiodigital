@@ -470,11 +470,20 @@ function OrdersWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
                       </div>
                       {item.addons.length > 0 ? (
                         <div className="mt-1 space-y-0.5 pl-4 text-xs text-muted-foreground">
-                          {item.addons.map((addon) => (
-                            <p key={addon.name}>
-                              + {addon.name} ({brl(addon.price)})
-                            </p>
-                          ))}
+                          {item.addons.map((addon) => {
+                            const label =
+                              addon.group === "guarnicao"
+                                ? "Guarnição"
+                                : addon.group === "extra"
+                                  ? "Extra"
+                                  : "Mistura";
+                            return (
+                              <p key={addon.name}>
+                                {label}: {addon.name}{" "}
+                                {addon.price > 0 ? `(+${brl(addon.price)})` : "(Adicionado)"}
+                              </p>
+                            );
+                          })}
                         </div>
                       ) : null}
                       {item.obs ? (

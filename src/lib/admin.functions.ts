@@ -6,6 +6,7 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 const addonSchema = z.object({
   name: z.string().trim().min(1).max(80),
   price: z.number().finite().min(0).max(10000),
+  group: z.enum(["mistura", "guarnicao", "extra"]).optional(),
 });
 
 const categorySchema = z.object({
@@ -46,7 +47,14 @@ const settingsSchema = z.object({
     cartao: z.boolean(),
   }),
   categories: z.array(categorySchema).min(1).max(50),
-  globalAddons: z.array(addonSchema.extend({ id: z.string().min(1).max(80) })).max(50),
+  globalAddons: z
+    .array(
+      addonSchema.extend({
+        id: z.string().min(1).max(80),
+        group: z.enum(["mistura", "guarnicao", "extra"]),
+      }),
+    )
+    .max(50),
 });
 
 const statusSchema = z.enum([
@@ -130,7 +138,12 @@ export const adminDeleteMenuItem = createServerFn({ method: "POST" })
 
 async function syncNormalizedCatalog(data: {
   categories: Array<{ id: string; label: string; emoji: string }>;
-  globalAddons: Array<{ id: string; name: string; price: number }>;
+  globalAddons: Array<{
+    id: string;
+    name: string;
+    price: number;
+    group: "mistura" | "guarnicao" | "extra";
+  }>;
 }) {
   const deactivateCategories = await supabaseAdmin
     .from("categories")
@@ -163,7 +176,10 @@ async function syncNormalizedCatalog(data: {
   }
 
   const addonRows = data.globalAddons.map((addon, index) => ({
-    ...addon,
+    id: addon.id,
+    name: addon.name,
+    price: addon.price,
+    addon_group: addon.group,
     sort_order: index,
     active: true,
   }));

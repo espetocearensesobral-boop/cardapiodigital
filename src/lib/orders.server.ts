@@ -1,10 +1,11 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { DEFAULT_MENU_ITEMS } from "@/lib/menu";
+import { DEFAULT_MENU_ITEMS, proteinLimitForSize } from "@/lib/menu";
 import { DEFAULT_SETTINGS } from "@/lib/settings";
 
 export type SelectedAddonInput = {
   name: string;
   price: number;
+  group?: "mistura" | "guarnicao" | "extra" | undefined;
 };
 
 export type CheckoutItemInput = {
@@ -65,9 +66,14 @@ type MenuRow = {
   price: number;
   available: boolean;
   addons: unknown;
+  category?: string;
 };
 
-type Addon = { name: string; price: number };
+type Addon = {
+  name: string;
+  price: number;
+  group?: "mistura" | "guarnicao" | "extra" | undefined;
+};
 
 function isMockOrderMode() {
   // O catálogo público permanece mockado temporariamente. O caminho Supabase
@@ -93,7 +99,11 @@ function parseAddons(value: unknown): Addon[] {
       typeof addon.name === "string" &&
       typeof addon.price === "number" &&
       Number.isFinite(addon.price) &&
-      addon.price >= 0,
+      addon.price >= 0 &&
+      (addon.group === undefined ||
+        addon.group === "mistura" ||
+        addon.group === "guarnicao" ||
+        addon.group === "extra"),
   );
 }
 
@@ -149,7 +159,7 @@ async function priceAndValidateItems(input: CheckoutInput) {
       }
     : await supabaseAdmin
         .from("menu_items")
-        .select("id, name, size, price, available, addons")
+        .select("id, name, size, price, available, addons, category")
         .in("id", ids);
   const { data: menu, error } = result;
 
@@ -179,6 +189,16 @@ async function priceAndValidateItems(input: CheckoutInput) {
       if (!approved) throw new Error(`O adicional ${addon.name} não está disponível.`);
       return approved;
     });
+
+    if (menuItem.category === "quentinhas") {
+      const proteinLimit = proteinLimitForSize(menuSize || selectedSize);
+      const proteinCount = addons.filter((addon) => addon.group === "mistura").length;
+      if (proteinCount !== proteinLimit) {
+        throw new Error(
+          `Selecione ${proteinLimit} ${proteinLimit === 1 ? "proteína" : "proteínas"} para a quentinha ${menuSize || selectedSize}.`,
+        );
+      }
+    }
 
     const unitPrice = Number(menuItem.price) + addons.reduce((sum, addon) => sum + addon.price, 0);
     items.push({
@@ -265,13 +285,24 @@ export function buildWhatsappMessage(
       `*${item.qty}x ${cleanWhatsAppText(item.name)}${item.size ? ` (${cleanWhatsAppText(item.size)})` : ""}* - R$ ${money(item.unitPrice * item.qty)}`,
     );
     if (item.addons.length > 0) {
-      lines.push("_ADICIONAIS:_");
-      for (const addon of item.addons) {
-        lines.push(
-          addon.price > 0
-            ? `- ${cleanWhatsAppText(addon.name)} (+R$ ${money(addon.price)})`
-            : `- ${cleanWhatsAppText(addon.name)} (INCLUSO)`,
-        );
+      const groups = [
+        { key: "mistura", label: "_MISTURAS ADICIONADAS:_" },
+        { key: "guarnicao", label: "_GUARNIÇÕES ADICIONADAS:_" },
+        { key: "extra", label: "_EXTRAS ADICIONADOS:_" },
+        { key: "legacy", label: "_ADICIONAIS ADICIONADOS:_" },
+      ];
+
+      for (const group of groups) {
+        const groupItems = item.addons.filter((addon) => (addon.group ?? "legacy") === group.key);
+        if (groupItems.length === 0) continue;
+        lines.push(group.label);
+        for (const addon of groupItems) {
+          lines.push(
+            addon.price > 0
+              ? `- ${cleanWhatsAppText(addon.name)} (+R$ ${money(addon.price)})`
+              : `- ${cleanWhatsAppText(addon.name)} (ADICIONADO)`,
+          );
+        }
       }
     }
     if (item.obs) lines.push(`_OBSERVAÇÃO:_ ${cleanWhatsAppText(item.obs)}`);

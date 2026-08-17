@@ -114,7 +114,7 @@ interface DbOrder {
     size?: string;
     qty: number;
     unitPrice: number;
-    addons?: Array<{ name: string; price: number }>;
+    addons?: Array<{ name: string; price: number; group?: "mistura" | "guarnicao" | "extra" }>;
     obs?: string;
   }>;
   notes?: string | null;
@@ -419,12 +419,13 @@ function AdminWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
       id: crypto.randomUUID(),
       name: newAddonName.trim(),
       price: Number(newAddonPrice),
+      group: "extra",
     };
     try {
       await persistSettings(systemSettings, categories, [...globalAddons, newAddon]);
       setNewAddonName("");
       setNewAddonPrice("");
-      toast.success("Adicional/Borda salvo!");
+      toast.success("Adicional salvo na seção de extras!");
       playNotificationSound();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Não foi possível salvar o adicional.");
@@ -1239,35 +1240,63 @@ function AdminWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
 
             <div className="space-y-2 border-t pt-3">
               <Label className="text-sm font-semibold">
-                Adicionais & Bordas Vinculadas a este Produto
+                Opções de montagem vinculadas a este produto
               </Label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-40 overflow-y-auto p-2 border rounded-lg bg-muted/30">
-                {globalAddons.map((ga) => {
-                  const currentAddons: Addon[] = editingItem?.addons || [];
-                  const isChecked = currentAddons.some((a) => a.name === ga.name);
+              <div className="max-h-64 space-y-4 overflow-y-auto rounded-lg border bg-muted/30 p-3">
+                {(["mistura", "guarnicao", "extra"] as const).map((group) => {
+                  const groupAddons = globalAddons.filter((addon) => addon.group === group);
+                  if (groupAddons.length === 0) return null;
+                  const label =
+                    group === "mistura"
+                      ? "Misturas"
+                      : group === "guarnicao"
+                        ? "Guarnições"
+                        : "Adicionais";
+                  const helper =
+                    group === "mistura"
+                      ? "Proteínas obrigatórias por tamanho"
+                      : group === "guarnicao"
+                        ? "Acompanhamentos do prato"
+                        : "Itens extras";
                   return (
-                    <label
-                      key={ga.id}
-                      className="flex items-center gap-2 text-xs p-2 rounded-md hover:bg-muted cursor-pointer"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={isChecked}
-                        onChange={(e) => {
-                          let next: Addon[];
-                          if (e.target.checked) {
-                            next = [...currentAddons, { name: ga.name, price: ga.price }];
-                          } else {
-                            next = currentAddons.filter((a) => a.name !== ga.name);
-                          }
-                          setEditingItem((prev) => ({ ...prev, addons: next }));
-                        }}
-                        className="rounded text-primary focus:ring-primary size-4"
-                      />
-                      <span className="font-medium truncate">
-                        {ga.name} ({brl(ga.price)})
-                      </span>
-                    </label>
+                    <section key={group}>
+                      <div className="mb-2">
+                        <p className="text-xs font-bold uppercase tracking-wide text-primary">
+                          {label}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground">{helper}</p>
+                      </div>
+                      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                        {groupAddons.map((ga) => {
+                          const currentAddons: Addon[] = editingItem?.addons || [];
+                          const isChecked = currentAddons.some((addon) => addon.name === ga.name);
+                          return (
+                            <label
+                              key={ga.id}
+                              className="flex cursor-pointer items-center gap-2 rounded-md p-2 text-xs hover:bg-muted"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={(event) => {
+                                  const next = event.target.checked
+                                    ? [
+                                        ...currentAddons,
+                                        { name: ga.name, price: ga.price, group: ga.group },
+                                      ]
+                                    : currentAddons.filter((addon) => addon.name !== ga.name);
+                                  setEditingItem((prev) => ({ ...prev, addons: next }));
+                                }}
+                                className="size-4 rounded text-primary focus:ring-primary"
+                              />
+                              <span className="truncate font-medium">
+                                {ga.name} ({ga.price > 0 ? brl(ga.price) : "Incluso"})
+                              </span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </section>
                   );
                 })}
               </div>
@@ -1531,8 +1560,21 @@ function AdminWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
                           <span>{brl(it.unitPrice * it.qty)}</span>
                         </div>
                         {it.addons && it.addons.length > 0 && (
-                          <div className="text-muted-foreground text-[11px] pl-2">
-                            + {it.addons.map((a) => `${a.name} (${brl(a.price)})`).join(", ")}
+                          <div className="space-y-0.5 pl-2 text-[11px] text-muted-foreground">
+                            {it.addons.map((addon) => {
+                              const label =
+                                addon.group === "guarnicao"
+                                  ? "Guarnição"
+                                  : addon.group === "extra"
+                                    ? "Extra"
+                                    : "Mistura";
+                              return (
+                                <p key={addon.name}>
+                                  {label}: {addon.name}{" "}
+                                  {addon.price > 0 ? `(+${brl(addon.price)})` : "(Adicionado)"}
+                                </p>
+                              );
+                            })}
                           </div>
                         )}
                         {it.obs && (

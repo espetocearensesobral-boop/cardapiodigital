@@ -1,3 +1,5 @@
+import type { Addon } from "@/lib/menu";
+
 export type SalonTableStatus = "livre" | "ocupada" | "aguardando_pagamento";
 export type CommandStatus = "aberta" | "aguardando_pagamento";
 
@@ -7,6 +9,7 @@ export type SalonCommandItem = {
   size?: string;
   qty: number;
   unitPrice: number;
+  addons?: Addon[];
   note?: string;
 };
 
@@ -63,7 +66,17 @@ export const MOCK_SALON_TABLES: SalonTable[] = [
       openedAt: "2026-08-16T20:14:00-03:00",
       status: "aberta",
       items: [
-        { id: "quentinha-m", name: "Quentinha M", size: "M", qty: 1, unitPrice: 14 },
+        {
+          id: "quentinha-m",
+          name: "Quentinha M",
+          size: "M",
+          qty: 1,
+          unitPrice: 14,
+          addons: [
+            { name: "Strogonoff de carne", price: 0, group: "mistura" },
+            { name: "Baião de dois", price: 0, group: "guarnicao" },
+          ],
+        },
         { id: "refri-250", name: "Refrigerante 250 ml", size: "250 ml", qty: 1, unitPrice: 5 },
       ],
     },
@@ -81,7 +94,18 @@ export const MOCK_SALON_TABLES: SalonTable[] = [
       openedAt: "2026-08-16T20:32:00-03:00",
       status: "aberta",
       items: [
-        { id: "quentinha-g", name: "Quentinha G", size: "G", qty: 1, unitPrice: 20 },
+        {
+          id: "quentinha-g",
+          name: "Quentinha G",
+          size: "G",
+          qty: 1,
+          unitPrice: 20,
+          addons: [
+            { name: "Strogonoff de carne", price: 0, group: "mistura" },
+            { name: "Linguiça Toscana frita", price: 0, group: "mistura" },
+            { name: "Arroz de cenoura refogado", price: 0, group: "guarnicao" },
+          ],
+        },
         {
           id: "salada-colorida",
           name: "Salada colorida na maionese",
@@ -106,7 +130,17 @@ export const MOCK_SALON_TABLES: SalonTable[] = [
       openedAt: "2026-08-16T19:48:00-03:00",
       status: "aguardando_pagamento",
       items: [
-        { id: "quentinha-p", name: "Quentinha P", size: "P", qty: 1, unitPrice: 12 },
+        {
+          id: "quentinha-p",
+          name: "Quentinha P",
+          size: "P",
+          qty: 1,
+          unitPrice: 12,
+          addons: [
+            { name: "Galinha caipira ao molho com pirão", price: 0, group: "mistura" },
+            { name: "Feijão carioca", price: 0, group: "guarnicao" },
+          ],
+        },
         { id: "suco-goiaba", name: "Suco de goiaba", size: "Copo 300 ml", qty: 2, unitPrice: 7 },
       ],
     },
@@ -124,7 +158,19 @@ export const MOCK_SALON_TABLES: SalonTable[] = [
       openedAt: "2026-08-16T20:50:00-03:00",
       status: "aberta",
       items: [
-        { id: "quentinha-gg", name: "Quentinha GG", size: "GG", qty: 1, unitPrice: 30 },
+        {
+          id: "quentinha-gg",
+          name: "Quentinha GG",
+          size: "GG",
+          qty: 1,
+          unitPrice: 30,
+          addons: [
+            { name: "Filé trinchado ao acréscimo de 2 reais", price: 0, group: "mistura" },
+            { name: "Strogonoff de carne", price: 0, group: "mistura" },
+            { name: "Linguiça Toscana frita", price: 0, group: "mistura" },
+            { name: "Farofa tradicional ou pirão", price: 0, group: "guarnicao" },
+          ],
+        },
         { id: "extra-file", name: "Filé trinchado extra", size: "Extra", qty: 1, unitPrice: 2 },
       ],
     },
@@ -140,7 +186,15 @@ export const MOCK_SALON_TABLES: SalonTable[] = [
 ];
 
 export function salonCommandTotal(command?: SalonCommand) {
-  return command?.items.reduce((total, item) => total + item.qty * item.unitPrice, 0) ?? 0;
+  return (
+    command?.items.reduce(
+      (total, item) =>
+        total +
+        item.qty *
+          (item.unitPrice + (item.addons ?? []).reduce((sum, addon) => sum + addon.price, 0)),
+      0,
+    ) ?? 0
+  );
 }
 
 export function salonCommandItemCount(command?: SalonCommand) {

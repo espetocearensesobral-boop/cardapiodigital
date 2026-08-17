@@ -196,9 +196,19 @@ create table if not exists public.global_addons (
   price numeric(10, 2) not null check (price >= 0),
   sort_order integer not null default 0 check (sort_order >= 0),
   active boolean not null default true,
+  addon_group text not null default 'extra' check (addon_group in ('mistura', 'guarnicao', 'extra')),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.global_addons
+  add column if not exists addon_group text not null default 'extra';
+
+alter table public.global_addons
+  drop constraint if exists global_addons_addon_group_check;
+alter table public.global_addons
+  add constraint global_addons_addon_group_check
+  check (addon_group in ('mistura', 'guarnicao', 'extra'));
 
 create unique index if not exists global_addons_active_name_idx
   on public.global_addons (lower(name))
@@ -237,11 +247,12 @@ where not exists (
 )
 on conflict (id) do nothing;
 
-insert into public.global_addons (id, name, price, sort_order, active)
+insert into public.global_addons (id, name, price, addon_group, sort_order, active)
 select
   item->>'id',
   item->>'name',
   greatest(0, coalesce((item->>'price')::numeric, 0)),
+  coalesce(item->>'group', 'extra'),
   row_number() over (order by ordinality) - 1,
   true
 from public.store_settings settings
@@ -278,7 +289,8 @@ begin
   global_addons = coalesce((select jsonb_agg(jsonb_build_object(
     'id', a.id,
     'name', a.name,
-    'price', a.price
+    'price', a.price,
+    'group', a.addon_group
   ) order by a.sort_order, a.name) from public.global_addons a where a.active), '[]'::jsonb),
   updated_at = now()
   where id = 1;

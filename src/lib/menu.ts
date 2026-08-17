@@ -1,6 +1,12 @@
 import { queryOptions } from "@tanstack/react-query";
 
-export type Addon = { name: string; price: number };
+export type AddonGroup = "mistura" | "guarnicao" | "extra";
+
+export type Addon = {
+  name: string;
+  price: number;
+  group?: AddonGroup;
+};
 
 export type MenuItem = {
   id: string;
@@ -25,28 +31,59 @@ export type CartLine = {
   unitPrice: number;
 };
 
-const CARDAPIO_IMAGE = "/catalog/dori-quentinhas-cardapio.png";
-const TAMANHOS_IMAGE = "/catalog/dori-quentinhas-tamanhos.png";
+const QUENTINHA_IMAGE = "/catalog/quentinha-real-reference.png";
+const MISTURAS_IMAGE = "/catalog/misturas-guarnicoes-real.jpg";
+const SALADAS_IMAGE = "/catalog/saladas-real.jpg";
+const BEBIDAS_IMAGE = "/catalog/bebidas-real.jpg";
 
 const MISTURAS: Addon[] = [
-  { name: "Panqueca de frango ao molho branco com queijo gratinado", price: 0 },
-  { name: "Galinha caipira ao molho com pirão", price: 0 },
-  { name: "Filé trinchado ao acréscimo de 2 reais", price: 2 },
-  { name: "Strogonoff de carne", price: 0 },
-  { name: "Carne de panela ao purê de batata acréscimo de 2 reais", price: 2 },
-  { name: "Linguiça Toscana frita", price: 0 },
-  { name: "Ovos fritos ou cozidos — 2 unidades", price: 0 },
+  {
+    name: "Panqueca de frango ao molho branco com queijo gratinado",
+    price: 0,
+    group: "mistura",
+  },
+  { name: "Galinha caipira ao molho com pirão", price: 0, group: "mistura" },
+  { name: "Filé trinchado ao acréscimo de 2 reais", price: 2, group: "mistura" },
+  { name: "Strogonoff de carne", price: 0, group: "mistura" },
+  {
+    name: "Carne de panela ao purê de batata acréscimo de 2 reais",
+    price: 2,
+    group: "mistura",
+  },
+  { name: "Linguiça Toscana frita", price: 0, group: "mistura" },
+  { name: "Ovos fritos ou cozidos — 2 unidades", price: 0, group: "mistura" },
 ];
 
 const GUARNICOES: Addon[] = [
-  { name: "Baião de dois", price: 0 },
-  { name: "Arroz de cenoura refogado", price: 0 },
-  { name: "Feijão carioca", price: 0 },
-  { name: "Macarrão espaguete", price: 0 },
-  { name: "Farofa tradicional ou pirão", price: 0 },
+  { name: "Baião de dois", price: 0, group: "guarnicao" },
+  { name: "Arroz de cenoura refogado", price: 0, group: "guarnicao" },
+  { name: "Feijão carioca", price: 0, group: "guarnicao" },
+  { name: "Macarrão espaguete", price: 0, group: "guarnicao" },
+  { name: "Farofa tradicional ou pirão", price: 0, group: "guarnicao" },
 ];
 
 const QUENTINHA_OPTIONS = [...MISTURAS, ...GUARNICOES];
+
+export const QUENTINHA_PROTEIN_LIMITS: Record<string, number> = {
+  P: 1,
+  M: 1,
+  G: 2,
+  GG: 3,
+};
+
+export function isQuentinha(item: Pick<MenuItem, "category"> | null | undefined) {
+  return item?.category === "quentinhas";
+}
+
+export function proteinLimitForSize(size: string) {
+  return QUENTINHA_PROTEIN_LIMITS[size.trim().toUpperCase()] ?? 1;
+}
+
+export function addonGroupLabel(group?: AddonGroup) {
+  if (group === "mistura") return "Mistura";
+  if (group === "guarnicao") return "Guarnição";
+  return "Adicional";
+}
 
 export const DEFAULT_MENU_ITEMS: MenuItem[] = [
   {
@@ -56,7 +93,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     size: "P",
     price: 12,
     category: "quentinhas",
-    image_url: TAMANHOS_IMAGE,
+    image_url: QUENTINHA_IMAGE,
     badge: "Econômica",
     addons: QUENTINHA_OPTIONS,
     available: true,
@@ -69,7 +106,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     size: "M",
     price: 14,
     category: "quentinhas",
-    image_url: TAMANHOS_IMAGE,
+    image_url: QUENTINHA_IMAGE,
     badge: "Mais pedida",
     addons: QUENTINHA_OPTIONS,
     available: true,
@@ -82,7 +119,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     size: "G",
     price: 20,
     category: "quentinhas",
-    image_url: TAMANHOS_IMAGE,
+    image_url: QUENTINHA_IMAGE,
     badge: "Mais vendida",
     addons: QUENTINHA_OPTIONS,
     available: true,
@@ -95,7 +132,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     size: "GG",
     price: 30,
     category: "quentinhas",
-    image_url: TAMANHOS_IMAGE,
+    image_url: QUENTINHA_IMAGE,
     badge: "Família",
     addons: QUENTINHA_OPTIONS,
     available: true,
@@ -108,7 +145,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     size: "Porção",
     price: 7,
     category: "saladas",
-    image_url: CARDAPIO_IMAGE,
+    image_url: SALADAS_IMAGE,
     badge: null,
     addons: [],
     available: true,
@@ -121,7 +158,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     size: "Porção",
     price: 7,
     category: "saladas",
-    image_url: CARDAPIO_IMAGE,
+    image_url: SALADAS_IMAGE,
     badge: null,
     addons: [],
     available: true,
@@ -134,7 +171,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     size: "250 ml",
     price: 5,
     category: "adicionais",
-    image_url: CARDAPIO_IMAGE,
+    image_url: BEBIDAS_IMAGE,
     badge: null,
     addons: [],
     available: true,
@@ -147,7 +184,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     size: "1 litro",
     price: 8,
     category: "adicionais",
-    image_url: CARDAPIO_IMAGE,
+    image_url: BEBIDAS_IMAGE,
     badge: null,
     addons: [],
     available: true,
@@ -160,7 +197,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     size: "2 litros",
     price: 12,
     category: "adicionais",
-    image_url: CARDAPIO_IMAGE,
+    image_url: BEBIDAS_IMAGE,
     badge: null,
     addons: [],
     available: true,
@@ -173,7 +210,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     size: "Copo 300 ml",
     price: 7,
     category: "adicionais",
-    image_url: CARDAPIO_IMAGE,
+    image_url: BEBIDAS_IMAGE,
     badge: "Natural",
     addons: [],
     available: true,
@@ -186,7 +223,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     size: "Extra",
     price: 2,
     category: "adicionais",
-    image_url: CARDAPIO_IMAGE,
+    image_url: MISTURAS_IMAGE,
     badge: null,
     addons: [],
     available: true,
@@ -199,7 +236,7 @@ export const DEFAULT_MENU_ITEMS: MenuItem[] = [
     size: "Extra",
     price: 2,
     category: "adicionais",
-    image_url: CARDAPIO_IMAGE,
+    image_url: MISTURAS_IMAGE,
     badge: null,
     addons: [],
     available: true,

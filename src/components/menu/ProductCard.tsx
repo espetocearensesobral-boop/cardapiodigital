@@ -49,11 +49,14 @@ export function ProductCard({ item, onOpen, onQuickAdd }: Props) {
           <span className="font-display text-base font-bold text-primary">{brl(item.price)}</span>
           <button
             type="button"
-            aria-label={`Adicionar ${item.name}`}
+            aria-label={
+              item.category === "quentinhas" ? `Configurar ${item.name}` : `Adicionar ${item.name}`
+            }
             disabled={!item.available}
             onClick={(e) => {
               e.stopPropagation();
-              onQuickAdd(item);
+              if (item.category === "quentinhas") onOpen(item);
+              else onQuickAdd(item);
             }}
             className="bg-brasa flex size-8 items-center justify-center rounded-full text-primary-foreground transition-transform hover:scale-110 active:scale-90 disabled:opacity-40"
           >

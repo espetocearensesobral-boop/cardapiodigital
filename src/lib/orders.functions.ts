@@ -4,6 +4,7 @@ import { z } from "zod";
 const addonSchema = z.object({
   name: z.string().trim().min(1).max(80),
   price: z.number().finite().min(0),
+  group: z.enum(["mistura", "guarnicao", "extra"]).optional(),
 });
 
 const orderSchema = z

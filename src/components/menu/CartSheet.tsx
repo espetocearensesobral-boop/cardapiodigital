@@ -80,9 +80,34 @@ export function CartSheet({
                   Tamanho: {line.item.size}
                 </p>
                 {line.addons.length > 0 ? (
-                  <p className="text-xs text-muted-foreground">
-                    + {line.addons.map((a) => a.name).join(", ")}
-                  </p>
+                  <div className="space-y-0.5 text-xs text-muted-foreground">
+                    {(["mistura", "guarnicao", "extra"] as const).map((group) => {
+                      const groupAddons = line.addons.filter((addon) =>
+                        group === "extra"
+                          ? addon.group !== "mistura" && addon.group !== "guarnicao"
+                          : addon.group === group,
+                      );
+                      if (groupAddons.length === 0) return null;
+                      const label =
+                        group === "mistura"
+                          ? "Mistura"
+                          : group === "guarnicao"
+                            ? "Guarnição"
+                            : "Extra";
+                      return (
+                        <p key={group}>
+                          <span className="font-semibold text-foreground">{label}:</span>{" "}
+                          {groupAddons
+                            .map((addon) =>
+                              addon.price > 0
+                                ? `${addon.name} (+${brl(addon.price)})`
+                                : `${addon.name} (Adicionado)`,
+                            )
+                            .join(", ")}
+                        </p>
+                      );
+                    })}
+                  </div>
                 ) : null}
                 {line.obs ? (
                   <p className="text-xs italic text-muted-foreground">"{line.obs}"</p>

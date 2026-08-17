@@ -36,7 +36,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
-import { DEFAULT_MENU_ITEMS, type Addon, type MenuItem } from "@/lib/menu";
+import {
+  DEFAULT_MENU_ITEMS,
+  isQuentinha,
+  proteinLimitForSize,
+  type Addon,
+  type MenuItem,
+} from "@/lib/menu";
 import { brl } from "@/lib/format";
 import {
   MOCK_PDV_SALES,
@@ -173,6 +179,13 @@ function PdvWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
     9021,
     ...sales.map((sale) => Number(sale.code.replace("PDV-", "")) || 0),
   );
+  const selectedProteinLimit =
+    selectedProduct && isQuentinha(selectedProduct) ? proteinLimitForSize(selectedProduct.size) : 0;
+  const selectedProteinCount = selectedAddons.filter((addon) => addon.group === "mistura").length;
+  const productSelectionReady =
+    !selectedProduct ||
+    !isQuentinha(selectedProduct) ||
+    selectedProteinCount === selectedProteinLimit;
 
   useEffect(() => {
     if (isPaymentOpen && paymentMethod === "dinheiro") {
@@ -188,22 +201,40 @@ function PdvWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
   }
 
   function toggleAddon(addon: Addon) {
-    setSelectedAddons((current) =>
-      current.some((item) => item.name === addon.name)
-        ? current.filter((item) => item.name !== addon.name)
-        : [...current, addon],
-    );
+    setSelectedAddons((current) => {
+      const checked = current.some((item) => item.name === addon.name);
+      if (checked) return current.filter((item) => item.name !== addon.name);
+
+      if (selectedProduct && isQuentinha(selectedProduct) && addon.group === "mistura") {
+        const currentProteinCount = current.filter((item) => item.group === "mistura").length;
+        if (currentProteinCount >= proteinLimitForSize(selectedProduct.size)) return current;
+      }
+
+      return [...current, addon];
+    });
   }
 
   function confirmProduct() {
     if (!selectedProduct) return;
+    if (!productSelectionReady) {
+      toast.error(
+        `Selecione ${selectedProteinLimit} ${selectedProteinLimit === 1 ? "proteína" : "proteínas"} para continuar.`,
+      );
+      return;
+    }
     const quantity = Math.max(1, Number.parseInt(selectedQty, 10) || 1);
-    const addonKey = `${selectedProduct.size}|${selectedAddons.map((addon) => addon.name).join("|")}`;
+    const addonKey = selectedAddons
+      .map((addon) => addon.name)
+      .sort()
+      .join("|");
     setCart((current) => {
       const existing = current.find(
         (line) =>
           line.itemId === selectedProduct.id &&
-          line.addons.map((addon) => addon.name).join("|") === addonKey,
+          line.addons
+            .map((addon) => addon.name)
+            .sort()
+            .join("|") === addonKey,
       );
       if (existing) {
         return current.map((line) =>
@@ -621,7 +652,7 @@ function PdvWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
           <DialogHeader>
             <DialogTitle>{selectedProduct?.name ?? "Adicionar produto"}</DialogTitle>
             <DialogDescription>
-              Escolha os adicionais e a quantidade antes de lançar na venda.
+              Monte a quentinha e informe a quantidade antes de lançar na venda.
             </DialogDescription>
           </DialogHeader>
           {selectedProduct ? (
@@ -635,43 +666,104 @@ function PdvWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
                   Tamanho: {selectedProduct.size}
                 </p>
               </div>
-              {selectedProduct.addons.length ? (
-                <div className="space-y-2">
-                  <Label>
-                    {selectedProduct.category === "quentinhas"
-                      ? "Misturas & Guarnições"
-                      : "Adicionais"}
-                  </Label>
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    {selectedProduct.addons.map((addon) => {
-                      const selected = selectedAddons.some((item) => item.name === addon.name);
-                      return (
-                        <button
-                          key={addon.name}
-                          type="button"
-                          aria-pressed={selected}
-                          onClick={() => toggleAddon(addon)}
-                          className={`flex min-h-11 items-center justify-between rounded-xl border px-3 text-left text-sm transition-colors ${
-                            selected
-                              ? "border-primary bg-accent text-primary"
-                              : "border-border bg-background hover:border-primary/40"
-                          }`}
-                        >
-                          <span className="flex items-center gap-2 font-medium">
-                            <span
-                              className={`flex size-5 items-center justify-center rounded-full border ${selected ? "border-primary bg-primary text-primary-foreground" : "border-border"}`}
-                            >
-                              {selected ? <Check className="size-3" /> : null}
-                            </span>
-                            {addon.name}
-                          </span>
-                          <span className="font-semibold">
-                            {addon.price > 0 ? `+${brl(addon.price)}` : "Incluso"}
-                          </span>
-                        </button>
-                      );
-                    })}
+              {selectedProduct.category === "quentinhas" ? (
+                <div className="rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3 text-primary">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-wide">Obrigatório</p>
+                      <p className="mt-1 text-sm font-semibold">
+                        Escolha {selectedProteinLimit}{" "}
+                        {selectedProteinLimit === 1 ? "proteína" : "proteínas"}
+                      </p>
+                    </div>
+                    <span className="rounded-full bg-primary/15 px-2.5 py-1 text-xs font-bold">
+                      {selectedProteinCount}/{selectedProteinLimit}
+                    </span>
                   </div>
+                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                    P/M permitem 1 proteína, G permite 2 e GG permite 3.
+                  </p>
+                </div>
+              ) : null}
+              {selectedProduct.addons.length ? (
+                <div className="space-y-4">
+                  {(["mistura", "guarnicao", "extra"] as const).map((group) => {
+                    const groupAddons = selectedProduct.addons.filter((addon) =>
+                      group === "extra"
+                        ? addon.group !== "mistura" && addon.group !== "guarnicao"
+                        : addon.group === group,
+                    );
+                    if (groupAddons.length === 0) return null;
+                    const title =
+                      group === "mistura"
+                        ? "Misturas"
+                        : group === "guarnicao"
+                          ? "Guarnições"
+                          : "Adicionais";
+                    const description =
+                      group === "mistura"
+                        ? `Selecione ${selectedProteinLimit} ${selectedProteinLimit === 1 ? "opção" : "opções"} de proteína.`
+                        : group === "guarnicao"
+                          ? "Escolha os acompanhamentos do prato."
+                          : "Inclua opções extras na venda.";
+                    return (
+                      <section key={group} className="space-y-2">
+                        <div className="flex items-end justify-between gap-3">
+                          <div>
+                            <Label>{title}</Label>
+                            <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
+                          </div>
+                          {group === "mistura" ? (
+                            <span className="text-xs font-bold text-primary">
+                              {selectedProteinCount}/{selectedProteinLimit}
+                            </span>
+                          ) : null}
+                        </div>
+                        <div className="grid gap-2 sm:grid-cols-2">
+                          {groupAddons.map((addon) => {
+                            const selected = selectedAddons.some(
+                              (item) => item.name === addon.name,
+                            );
+                            const reachedLimit =
+                              group === "mistura" && selectedProteinCount >= selectedProteinLimit;
+                            const addonLabel = selected
+                              ? addon.price > 0
+                                ? `+${brl(addon.price)} · Adicionado`
+                                : "Adicionado"
+                              : addon.price > 0
+                                ? `+${brl(addon.price)}`
+                                : "Incluso";
+                            return (
+                              <button
+                                key={addon.name}
+                                type="button"
+                                aria-pressed={selected}
+                                disabled={!selected && reachedLimit}
+                                onClick={() => toggleAddon(addon)}
+                                className={`flex min-h-11 items-center justify-between rounded-xl border px-3 text-left text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-45 ${
+                                  selected
+                                    ? "border-primary bg-accent text-primary"
+                                    : "border-border bg-background hover:border-primary/40"
+                                }`}
+                              >
+                                <span className="flex min-w-0 items-center gap-2 font-medium">
+                                  <span
+                                    className={`flex size-5 shrink-0 items-center justify-center rounded-full border ${selected ? "border-primary bg-primary text-primary-foreground" : "border-border"}`}
+                                  >
+                                    {selected ? <Check className="size-3" /> : null}
+                                  </span>
+                                  <span className="leading-snug">{addon.name}</span>
+                                </span>
+                                <span className="ml-2 shrink-0 text-right text-xs font-semibold">
+                                  {addonLabel}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </section>
+                    );
+                  })}
                 </div>
               ) : null}
               <div className="space-y-2">
@@ -695,9 +787,13 @@ function PdvWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
             <Button
               type="button"
               onClick={confirmProduct}
+              disabled={!productSelectionReady}
               className="flex-1 justify-center gap-2 sm:flex-none"
             >
-              <Plus className="size-4" /> Lançar na venda
+              <Plus className="size-4" />
+              {productSelectionReady
+                ? "Lançar na venda"
+                : `Selecione ${selectedProteinLimit} ${selectedProteinLimit === 1 ? "proteína" : "proteínas"}`}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -831,10 +927,22 @@ function PdvWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
               <div className="space-y-2">
                 {completedSale.items.map((line) => (
                   <div key={line.lineId} className="flex justify-between gap-3 text-sm">
-                    <span>
-                      {line.qty}x {line.name}
-                      <small className="ml-1 text-xs text-muted-foreground">({line.size})</small>
-                    </span>
+                    <div>
+                      <span>
+                        {line.qty}x {line.name}
+                        <small className="ml-1 text-xs text-muted-foreground">({line.size})</small>
+                      </span>
+                      {line.addons.length ? (
+                        <div className="mt-1 space-y-0.5 text-xs text-muted-foreground">
+                          {line.addons.map((addon) => (
+                            <p key={addon.name}>
+                              {addon.group === "guarnicao" ? "Guarnição" : "Mistura"}: {addon.name}
+                              {addon.price > 0 ? ` (+${brl(addon.price)})` : " (Adicionado)"}
+                            </p>
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
                     <strong>{brl(pdvLineTotal(line))}</strong>
                   </div>
                 ))}
@@ -919,9 +1027,30 @@ function PdvCartItem({
             Tamanho: {line.size || "Não informado"}
           </p>
           {line.addons.length ? (
-            <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
-              + {line.addons.map((addon) => addon.name).join(", ")}
-            </p>
+            <div className="mt-1 space-y-0.5 text-xs text-muted-foreground">
+              {(["mistura", "guarnicao", "extra"] as const).map((group) => {
+                const groupAddons = line.addons.filter((addon) =>
+                  group === "extra"
+                    ? addon.group !== "mistura" && addon.group !== "guarnicao"
+                    : addon.group === group,
+                );
+                if (groupAddons.length === 0) return null;
+                const label =
+                  group === "mistura" ? "Mistura" : group === "guarnicao" ? "Guarnição" : "Extra";
+                return (
+                  <p key={group}>
+                    <span className="font-semibold text-foreground">{label}:</span>{" "}
+                    {groupAddons
+                      .map((addon) =>
+                        addon.price > 0
+                          ? `${addon.name} (+${brl(addon.price)})`
+                          : `${addon.name} (Adicionado)`,
+                      )
+                      .join(", ")}
+                  </p>
+                );
+              })}
+            </div>
           ) : null}
         </div>
         <strong className="shrink-0 text-sm">{brl(pdvLineTotal(line))}</strong>

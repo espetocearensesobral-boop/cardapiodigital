@@ -22,7 +22,13 @@ import {
 import { toast } from "sonner";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { brl } from "@/lib/format";
-import { DEFAULT_MENU_ITEMS } from "@/lib/menu";
+import {
+  DEFAULT_MENU_ITEMS,
+  isQuentinha,
+  proteinLimitForSize,
+  type Addon,
+  type MenuItem,
+} from "@/lib/menu";
 import {
   MOCK_SALON_TABLES,
   SALON_STATUS_META,
@@ -48,19 +54,9 @@ export const Route = createFileRoute("/salao")({
 
 type TableFilter = "all" | SalonTableStatus;
 
-type CatalogItem = {
-  id: string;
-  name: string;
-  size: string;
-  price: number;
-};
+type CatalogItem = Pick<MenuItem, "id" | "name" | "size" | "price" | "category" | "addons">;
 
-const SALON_CATALOG: CatalogItem[] = DEFAULT_MENU_ITEMS.map((item) => ({
-  id: item.id,
-  name: item.name,
-  size: item.size,
-  price: item.price,
-}));
+const SALON_CATALOG: CatalogItem[] = DEFAULT_MENU_ITEMS;
 
 const tableStatusClasses: Record<SalonTableStatus, string> = {
   livre: "border-emerald-500/30 bg-emerald-500/5",
@@ -142,8 +138,15 @@ function SalonWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
   const [isAddingItem, setIsAddingItem] = useState(false);
   const [draftItemId, setDraftItemId] = useState(SALON_CATALOG[0]?.id ?? "");
   const [draftQuantity, setDraftQuantity] = useState("1");
+  const [draftAddons, setDraftAddons] = useState<Addon[]>([]);
 
   const selectedTable = tables.find((table) => table.id === selectedTableId) ?? null;
+  const draftItem = SALON_CATALOG.find((item) => item.id === draftItemId) ?? null;
+  const draftProteinLimit =
+    draftItem && isQuentinha(draftItem) ? proteinLimitForSize(draftItem.size) : 0;
+  const draftProteinCount = draftAddons.filter((addon) => addon.group === "mistura").length;
+  const draftReady =
+    !draftItem || !isQuentinha(draftItem) || draftProteinCount === draftProteinLimit;
   const filteredTables = useMemo(
     () => tables.filter((table) => filter === "all" || table.status === filter),
     [filter, tables],
@@ -180,32 +183,61 @@ function SalonWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
     toast.success(`Comanda da mesa ${table.number} aberta.`);
   }
 
+  function toggleDraftAddon(addon: Addon) {
+    setDraftAddons((current) => {
+      const checked = current.some((item) => item.name === addon.name);
+      if (checked) return current.filter((item) => item.name !== addon.name);
+      if (draftItem && isQuentinha(draftItem) && addon.group === "mistura") {
+        const currentProteinCount = current.filter((item) => item.group === "mistura").length;
+        if (currentProteinCount >= draftProteinLimit) return current;
+      }
+      return [...current, addon];
+    });
+  }
+
   function addItem() {
-    if (!selectedTable?.command) return;
-    const catalogItem = SALON_CATALOG.find((item) => item.id === draftItemId);
+    if (!selectedTable?.command || !draftItem) return;
+    if (!draftReady) {
+      toast.error(
+        `Selecione ${draftProteinLimit} ${draftProteinLimit === 1 ? "proteína" : "proteínas"} para lançar.`,
+      );
+      return;
+    }
     const quantity = Math.max(1, Number.parseInt(draftQuantity, 10) || 1);
-    if (!catalogItem) return;
+    const addonKey = draftAddons
+      .map((addon) => addon.name)
+      .sort()
+      .join("|");
 
     updateTable(selectedTable.id, (current) => {
       if (!current.command) return current;
-      const existing = current.command.items.find((item) => item.id === catalogItem.id);
+      const existing = current.command.items.find(
+        (item) =>
+          item.id === draftItem.id &&
+          (item.addons ?? [])
+            .map((addon) => addon.name)
+            .sort()
+            .join("|") === addonKey,
+      );
       const items = existing
         ? current.command.items.map((item) =>
-            item.id === catalogItem.id ? { ...item, qty: item.qty + quantity } : item,
+            item.id === existing.id ? { ...item, qty: item.qty + quantity } : item,
           )
         : [
             ...current.command.items,
             {
-              id: catalogItem.id,
-              name: catalogItem.name,
-              size: catalogItem.size,
+              id: draftItem.id,
+              name: draftItem.name,
+              size: draftItem.size,
               qty: quantity,
-              unitPrice: catalogItem.price,
+              unitPrice: draftItem.price,
+              addons: draftAddons,
             },
           ];
       return { ...current, command: { ...current.command, items } };
     });
     setDraftQuantity("1");
+    setDraftAddons([]);
     setIsAddingItem(false);
     toast.success(`${quantity} item(ns) adicionado(s) à comanda.`);
   }
@@ -536,6 +568,21 @@ function SalonWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
                                 Tamanho: {item.size}
                               </p>
                             ) : null}
+                            {item.addons?.length ? (
+                              <div className="mt-1 space-y-0.5 text-xs text-muted-foreground">
+                                {item.addons.map((addon) => (
+                                  <p key={addon.name}>
+                                    {addon.group === "guarnicao"
+                                      ? "Guarnição"
+                                      : addon.group === "extra"
+                                        ? "Extra"
+                                        : "Mistura"}
+                                    : {addon.name}{" "}
+                                    {addon.price > 0 ? `(+${brl(addon.price)})` : "(Adicionado)"}
+                                  </p>
+                                ))}
+                              </div>
+                            ) : null}
                             {item.note ? (
                               <p className="mt-0.5 text-xs italic text-muted-foreground">
                                 Obs.: {item.note}
@@ -564,7 +611,10 @@ function SalonWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
                         Produto
                         <select
                           value={draftItemId}
-                          onChange={(event) => setDraftItemId(event.target.value)}
+                          onChange={(event) => {
+                            setDraftItemId(event.target.value);
+                            setDraftAddons([]);
+                          }}
                           className="mt-1.5 h-11 w-full rounded-xl border border-primary/20 bg-card px-3 text-sm text-foreground outline-none focus:border-primary"
                         >
                           {SALON_CATALOG.map((item) => (
@@ -586,10 +636,107 @@ function SalonWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
                           className="mt-1.5 h-11 w-full rounded-xl border border-primary/20 bg-card px-3 text-sm text-foreground outline-none focus:border-primary"
                         />
                       </label>
-                      <Button type="button" className="h-11 gap-2" onClick={addItem}>
-                        <Plus className="size-4" /> Lançar
+                      <Button
+                        type="button"
+                        className="h-11 gap-2"
+                        onClick={addItem}
+                        disabled={!draftReady}
+                      >
+                        <Plus className="size-4" /> {draftReady ? "Lançar" : "Escolha a proteína"}
                       </Button>
                     </div>
+                    {draftItem && isQuentinha(draftItem) ? (
+                      <div className="mt-4 rounded-xl border border-primary/20 bg-card/60 px-3 py-2 text-primary">
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-xs font-bold uppercase tracking-wide">
+                            Obrigatório
+                          </span>
+                          <span className="text-xs font-bold">
+                            {draftProteinCount}/{draftProteinLimit} proteína(s)
+                          </span>
+                        </div>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          P/M permitem 1 proteína, G permite 2 e GG permite 3.
+                        </p>
+                      </div>
+                    ) : null}
+                    {draftItem?.addons.length ? (
+                      <div className="mt-4 space-y-4">
+                        {(["mistura", "guarnicao", "extra"] as const).map((group) => {
+                          const options = draftItem.addons.filter((addon) =>
+                            group === "extra"
+                              ? addon.group !== "mistura" && addon.group !== "guarnicao"
+                              : addon.group === group,
+                          );
+                          if (options.length === 0) return null;
+                          const label =
+                            group === "mistura"
+                              ? "Misturas"
+                              : group === "guarnicao"
+                                ? "Guarnições"
+                                : "Adicionais";
+                          return (
+                            <section key={group}>
+                              <div className="mb-2 flex items-center justify-between gap-3">
+                                <div>
+                                  <p className="text-xs font-bold uppercase tracking-wide text-primary">
+                                    {label}
+                                  </p>
+                                  <p className="text-[11px] text-muted-foreground">
+                                    {group === "mistura"
+                                      ? "Proteína obrigatória"
+                                      : "Opções do prato"}
+                                  </p>
+                                </div>
+                                {group === "mistura" ? (
+                                  <span className="text-xs font-bold text-primary">
+                                    {draftProteinCount}/{draftProteinLimit}
+                                  </span>
+                                ) : null}
+                              </div>
+                              <div className="grid gap-2 sm:grid-cols-2">
+                                {options.map((addon) => {
+                                  const checked = draftAddons.some(
+                                    (item) => item.name === addon.name,
+                                  );
+                                  const reachedLimit =
+                                    group === "mistura" && draftProteinCount >= draftProteinLimit;
+                                  return (
+                                    <button
+                                      key={addon.name}
+                                      type="button"
+                                      disabled={!checked && reachedLimit}
+                                      onClick={() => toggleDraftAddon(addon)}
+                                      className={`flex min-h-10 items-center justify-between rounded-xl border px-3 text-left text-xs transition-colors disabled:cursor-not-allowed disabled:opacity-45 ${
+                                        checked
+                                          ? "border-primary bg-primary/10 text-primary"
+                                          : "border-border bg-card hover:border-primary/40"
+                                      }`}
+                                    >
+                                      <span className="flex min-w-0 items-center gap-2 font-medium">
+                                        <span className="flex size-4 shrink-0 items-center justify-center rounded-full border border-primary">
+                                          {checked ? <Check className="size-2.5" /> : null}
+                                        </span>
+                                        <span className="leading-snug">{addon.name}</span>
+                                      </span>
+                                      <span className="ml-2 shrink-0 font-semibold">
+                                        {checked
+                                          ? addon.price > 0
+                                            ? `+${brl(addon.price)} · Adicionado`
+                                            : "Adicionado"
+                                          : addon.price > 0
+                                            ? `+${brl(addon.price)}`
+                                            : "Incluso"}
+                                      </span>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </section>
+                          );
+                        })}
+                      </div>
+                    ) : null}
                   </div>
                 ) : null}
               </div>
