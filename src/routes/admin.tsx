@@ -33,6 +33,7 @@ import {
 import { menuQueryOptions, type MenuItem, type Addon } from "@/lib/menu";
 import { brl } from "@/lib/format";
 import { playNotificationSound } from "@/lib/sound";
+import { ADMIN_DEMO_MODE, DEMO_ADMIN_EMAIL, DEMO_ADMIN_PASSWORD } from "@/lib/admin-demo";
 import {
   useSystemSettings,
   useCategories,
@@ -195,6 +196,17 @@ function AdminLogin({
           <p className="mt-2 text-sm text-muted-foreground">
             Entre com uma conta autorizada da equipe.
           </p>
+          {ADMIN_DEMO_MODE ? (
+            <div className="mt-4 rounded-xl border border-primary/20 bg-accent p-3 text-left text-xs text-primary">
+              <p className="font-semibold">Acesso de demonstração ativo</p>
+              <p className="mt-1">
+                Usuário: <code className="font-mono font-semibold">{DEMO_ADMIN_EMAIL}</code>
+              </p>
+              <p className="mt-0.5">
+                Senha: <code className="font-mono font-semibold">{DEMO_ADMIN_PASSWORD}</code>
+              </p>
+            </div>
+          ) : null}
         </div>
         <div className="mt-6 space-y-4">
           <div className="space-y-1.5">

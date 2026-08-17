@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  ADMIN_DEMO_MODE,
+  ADMIN_DEMO_STORAGE_KEY,
+  DEMO_ADMIN_EMAIL,
+  DEMO_ADMIN_PASSWORD,
+} from "@/lib/admin-demo";
 
 type AccessStatus = "loading" | "unauthenticated" | "unauthorized" | "authorized";
 
@@ -11,6 +17,26 @@ type AdminAccess = {
   signIn: (email: string, password: string) => Promise<boolean>;
   signOut: () => Promise<void>;
 };
+
+function hasDemoSession() {
+  try {
+    return window.localStorage.getItem(ADMIN_DEMO_STORAGE_KEY) === "active";
+  } catch {
+    return false;
+  }
+}
+
+function saveDemoSession(active: boolean) {
+  try {
+    if (active) {
+      window.localStorage.setItem(ADMIN_DEMO_STORAGE_KEY, "active");
+    } else {
+      window.localStorage.removeItem(ADMIN_DEMO_STORAGE_KEY);
+    }
+  } catch {
+    // O modo demo continua válido durante a sessão mesmo se o storage estiver indisponível.
+  }
+}
 
 export function useAdminAccess(): AdminAccess {
   const [status, setStatus] = useState<AccessStatus>("loading");
@@ -44,6 +70,13 @@ export function useAdminAccess(): AdminAccess {
   useEffect(() => {
     let mounted = true;
 
+    if (ADMIN_DEMO_MODE) {
+      setStatus(hasDemoSession() ? "authorized" : "unauthenticated");
+      return () => {
+        mounted = false;
+      };
+    }
+
     void supabase.auth.getSession().then(({ data }) => {
       if (mounted) void resolveAccess(data.session);
     });
@@ -63,6 +96,21 @@ export function useAdminAccess(): AdminAccess {
   const signIn = useCallback(
     async (email: string, password: string) => {
       setError(null);
+
+      if (ADMIN_DEMO_MODE) {
+        const isValid =
+          email.trim().toLowerCase() === DEMO_ADMIN_EMAIL.toLowerCase() &&
+          password === DEMO_ADMIN_PASSWORD;
+        if (!isValid) {
+          setStatus("unauthenticated");
+          setError("Usuário ou senha de demonstração inválidos.");
+          return false;
+        }
+        saveDemoSession(true);
+        setStatus("authorized");
+        return true;
+      }
+
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password,
@@ -81,6 +129,13 @@ export function useAdminAccess(): AdminAccess {
   );
 
   const signOut = useCallback(async () => {
+    if (ADMIN_DEMO_MODE) {
+      saveDemoSession(false);
+      setSession(null);
+      setStatus("unauthenticated");
+      return;
+    }
+
     await supabase.auth.signOut();
     setSession(null);
     setStatus("unauthenticated");

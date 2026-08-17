@@ -41,3 +41,7 @@ O erro `Não foi possível validar o cardápio. Tente novamente.` ocorria porque
 ## Central de pedidos `/pedidos`
 
 A nova rota respondeu HTTP 200 no preview Nitro/Vercel e renderizou o estado protegido de acesso quando não havia sessão autenticada. A tela informa que a central é exclusiva da equipe e direciona para o login administrativo, sem expor dados mockados publicamente. O dashboard e os controles mockados ficam disponíveis após a autenticação autorizada.
+
+## Acesso administrativo mockado
+
+No preview de produção, a tela `/admin` exibiu as credenciais de demonstração. O login com `admin@labellapizza.local` e `LaBella@2026` autorizou o painel sem consultar o Supabase, manteve a sessão no navegador e permitiu abrir `/pedidos`. A central exibiu 6 pedidos mockados, métricas, fluxo operacional, filtros e ações de status.

@@ -72,3 +72,14 @@ MOCK_DATA_MODE=false
 ```
 
 Com qualquer outro valor, ou sem essa variável, o pedido é validado e confirmado pelo catálogo mockado local, evitando que uma configuração Supabase incompleta interrompa a finalização do pedido.
+
+## Acesso administrativo de demonstração
+
+Com o banco desconectado, o login administrativo funciona em modo de demonstração por padrão. Use:
+
+```text
+Usuário: admin@labellapizza.local
+Senha: LaBella@2026
+```
+
+A sessão é mantida apenas no `localStorage` do navegador e não representa uma conta real. Para reativar a autenticação Supabase, configure `VITE_ADMIN_DEMO_MODE=false` no ambiente do frontend e mantenha as variáveis públicas do Supabase configuradas. A central `/pedidos` continua usando os pedidos mockados até a integração de leitura ser ativada.
