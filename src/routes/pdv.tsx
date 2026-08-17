@@ -139,6 +139,7 @@ function PdvWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
   const [paymentMethod, setPaymentMethod] = useState<PdvPaymentMethod>("pix");
   const [receivedAmount, setReceivedAmount] = useState("");
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
+  const [isSalesHistoryOpen, setIsSalesHistoryOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<MenuItem | null>(null);
   const [selectedAddons, setSelectedAddons] = useState<Addon[]>([]);
   const [selectedQty, setSelectedQty] = useState("1");
@@ -536,18 +537,31 @@ function PdvWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
                         : "Nenhum item selecionado"}
                     </p>
                   </div>
-                  {cart.length ? (
+                  <div className="flex shrink-0 items-center gap-1">
                     <Button
                       type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="text-muted-foreground hover:text-destructive"
-                      onClick={clearSale}
-                      aria-label="Limpar venda atual"
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5"
+                      onClick={() => setIsSalesHistoryOpen(true)}
                     >
-                      <Trash2 className="size-4" />
+                      <ReceiptText className="size-4" />
+                      <span className="hidden sm:inline">Últimas vendas</span>
+                      <span className="sm:hidden">Histórico</span>
                     </Button>
-                  ) : null}
+                    {cart.length ? (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="text-muted-foreground hover:text-destructive"
+                        onClick={clearSale}
+                        aria-label="Limpar venda atual"
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    ) : null}
+                  </div>
                 </div>
 
                 <div className="mt-4 space-y-2">
@@ -610,41 +624,60 @@ function PdvWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
                   </Button>
                 </div>
               </div>
-
-              <div className="mt-6 rounded-3xl border border-border bg-card p-4 shadow-card sm:p-5">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <h2 className="font-display text-lg font-bold">Últimas vendas</h2>
-                    <p className="mt-1 text-sm text-muted-foreground">Movimentações deste caixa.</p>
-                  </div>
-                  <ReceiptText className="size-5 text-primary" />
-                </div>
-                <div className="mt-4 space-y-2">
-                  {sales.slice(0, 4).map((sale) => (
-                    <div
-                      key={sale.id}
-                      className="flex items-center justify-between gap-3 rounded-2xl bg-muted/55 p-3"
-                    >
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold">{sale.code}</p>
-                        <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                          {sale.customerName} • {pdvTime(sale.createdAt)}
-                        </p>
-                      </div>
-                      <div className="shrink-0 text-right">
-                        <p className="text-sm font-bold">{brl(sale.total)}</p>
-                        <p className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
-                          {PDV_PAYMENT_LABELS[sale.paymentMethod]}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
             </aside>
           </section>
         </main>
       </div>
+
+      <Dialog open={isSalesHistoryOpen} onOpenChange={setIsSalesHistoryOpen}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Últimas vendas</DialogTitle>
+            <DialogDescription>
+              Consulte as movimentações registradas neste caixa, da mais recente para a mais antiga.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="scroll-panel max-h-[min(28rem,65vh)] space-y-2 overflow-y-auto pr-2">
+            {sales.length ? (
+              sales.map((sale) => (
+                <div
+                  key={sale.id}
+                  className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-muted/45 p-3 sm:p-4"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-bold">{sale.code}</p>
+                    <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                      {sale.customerName} • {pdvTime(sale.createdAt)}
+                    </p>
+                    <p className="mt-1 text-[11px] font-medium text-muted-foreground">
+                      {sale.tableNumber} · {PDV_PAYMENT_LABELS[sale.paymentMethod]}
+                    </p>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <p className="text-sm font-bold text-primary">{brl(sale.total)}</p>
+                    <p className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
+                      Concluída
+                    </p>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="rounded-2xl border border-dashed border-border bg-muted/40 px-4 py-8 text-center">
+                <ReceiptText className="mx-auto size-8 text-muted-foreground" />
+                <p className="mt-3 text-sm font-semibold">Nenhuma venda registrada</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  As vendas concluídas aparecerão neste histórico.
+                </p>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button type="button" onClick={() => setIsSalesHistoryOpen(false)}>
+              Fechar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={isProductDialogOpen} onOpenChange={setIsProductDialogOpen}>
         <DialogContent className="max-w-lg">
