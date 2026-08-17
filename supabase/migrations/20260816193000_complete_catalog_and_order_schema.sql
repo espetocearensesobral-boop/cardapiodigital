@@ -8,6 +8,7 @@ create table if not exists public.menu_items (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   description text not null default '',
+  size text not null default '',
   price numeric(10, 2) not null check (price >= 0),
   category text not null,
   image_url text not null default '',
@@ -170,6 +171,9 @@ begin
   return new;
 end;
 $$;
+
+alter table public.menu_items
+  add column if not exists size text not null default '';
 
 alter table public.store_settings
   add column if not exists timezone text not null default 'America/Fortaleza',

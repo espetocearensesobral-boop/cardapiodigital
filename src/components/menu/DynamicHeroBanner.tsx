@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Flame, Sparkles, Bike, ShieldCheck, ChevronRight } from "lucide-react";
 import { brl } from "@/lib/format";
 import { useSystemSettings } from "@/lib/settings";
+import { RESTAURANT } from "@/lib/config";
 
 export function DynamicHeroBanner() {
   const systemSettings = useSystemSettings();
@@ -12,31 +13,31 @@ export function DynamicHeroBanner() {
 
   const slides = [
     {
-      badge: "Forno a lenha",
-      title: "Pizzas artesanais",
-      subtitle: "entregues quentinhas",
+      badge: "Comida caseira",
+      title: "Quentinhas",
+      subtitle: "quentinhas e saborosas",
       info: `Pedido mínimo ${brl(minOrder)} • entrega ${brl(deliveryFee)}`,
       icon: Flame,
-      gradient: "from-amber-600/90 via-red-600/90 to-rose-700/90",
-      image: "https://images.unsplash.com/photo-1579751626657-72bc17010498?w=1400&h=600&fit=crop",
+      gradient: "from-amber-700/90 via-red-700/90 to-rose-800/90",
+      image: "/catalog/dori-quentinhas-tamanhos.png",
     },
     {
-      badge: "Massa Especial",
-      title: "Fermentação Natural",
-      subtitle: "crocante e saborosa",
-      info: "Ingredientes selecionados & bordas recheadas",
+      badge: "Cardápio da casa",
+      title: "Escolha sua",
+      subtitle: "mistura e guarnição",
+      info: "Baião, arroz, feijão, macarrão, farofa e pirão",
       icon: Sparkles,
-      gradient: "from-red-600/90 via-rose-600/90 to-amber-700/90",
-      image: "https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=1400&h=600&fit=crop",
+      gradient: "from-red-700/90 via-rose-700/90 to-amber-700/90",
+      image: "/catalog/dori-quentinhas-cardapio.png",
     },
     {
-      badge: "Entrega Rápida",
-      title: "Direto na sua Mesa",
-      subtitle: "ou na sua Casa",
+      badge: "Entrega rápida",
+      title: "Do nosso fogão",
+      subtitle: "para sua mesa",
       info: "Pagamento facilitado no Pix, Cartão ou Dinheiro",
       icon: Bike,
-      gradient: "from-rose-700/90 via-red-600/90 to-orange-600/90",
-      image: "https://images.unsplash.com/photo-1574129830868-6e7d7a7f2c55?w=1400&h=600&fit=crop",
+      gradient: "from-rose-800/90 via-red-700/90 to-orange-700/90",
+      image: "/catalog/dori-quentinhas-cardapio.png",
     },
   ];
 
@@ -72,7 +73,7 @@ export function DynamicHeroBanner() {
               {slide.badge}
             </span>
             <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-semibold text-white/90">
-              La Bella Pizza
+              {RESTAURANT.name}
             </span>
           </div>
 

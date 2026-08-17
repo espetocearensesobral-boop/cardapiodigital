@@ -111,6 +111,7 @@ interface DbOrder {
   change_for?: string | null;
   items: Array<{
     name: string;
+    size?: string;
     qty: number;
     unitPrice: number;
     addons?: Array<{ name: string; price: number }>;
@@ -305,8 +306,9 @@ function AdminWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
           id: item.id,
           name: item.name ?? "",
           description: item.description ?? "",
+          size: item.size ?? "",
           price: item.price ?? 0,
-          category: item.category ?? categories[0]?.id ?? "tradicional",
+          category: item.category ?? categories[0]?.id ?? "quentinhas",
           image_url: item.image_url ?? "",
           badge: item.badge ?? null,
           addons: item.addons ?? [],
@@ -358,8 +360,9 @@ function AdminWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
     setEditingItem({
       name: "",
       description: "",
+      size: "P",
       price: 0,
-      category: categories[0]?.id || "tradicional",
+      category: categories[0]?.id || "quentinhas",
       image_url: "",
       available: true,
       badge: null,
@@ -611,7 +614,12 @@ function AdminWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">
-                        <h4 className="font-bold text-sm truncate">{item.name}</h4>
+                        <div className="min-w-0">
+                          <h4 className="font-bold text-sm truncate">{item.name}</h4>
+                          <p className="text-[11px] font-semibold uppercase tracking-wide text-primary">
+                            Tamanho: {item.size || "Não informado"}
+                          </p>
+                        </div>
                         <span className="font-bold text-primary text-sm shrink-0">
                           {brl(item.price)}
                         </span>
@@ -681,6 +689,7 @@ function AdminWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
                   <TableHead className="w-[60px]">Foto</TableHead>
                   <TableHead>Nome</TableHead>
                   <TableHead>Categoria</TableHead>
+                  <TableHead>Tamanho</TableHead>
                   <TableHead>Preço</TableHead>
                   <TableHead>Adicionais</TableHead>
                   <TableHead>Status</TableHead>
@@ -716,6 +725,9 @@ function AdminWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
                         ) : null}
                       </TableCell>
                       <TableCell className="capitalize">{categoryLabel}</TableCell>
+                      <TableCell className="text-xs font-semibold text-primary">
+                        {item.size || "—"}
+                      </TableCell>
                       <TableCell className="font-semibold">{brl(item.price)}</TableCell>
                       <TableCell className="text-xs text-muted-foreground">
                         {item.addons?.length ? `${item.addons.length} opção(ões)` : "Nenhum"}
@@ -1121,7 +1133,7 @@ function AdminWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
                 <Label htmlFor="item-name">Nome do Produto</Label>
                 <Input
                   id="item-name"
-                  placeholder="Ex: Pizza Calabresa"
+                  placeholder="Ex: Quentinha G"
                   value={editingItem?.name || ""}
                   onChange={(e) => setEditingItem((prev) => ({ ...prev, name: e.target.value }))}
                   className="h-11"
@@ -1130,7 +1142,7 @@ function AdminWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
               <div className="space-y-1.5">
                 <Label htmlFor="item-category">Categoria</Label>
                 <Select
-                  value={editingItem?.category || categories[0]?.id || "tradicional"}
+                  value={editingItem?.category || categories[0]?.id || "quentinhas"}
                   onValueChange={(value) =>
                     setEditingItem((prev) => ({ ...prev, category: value }))
                   }
@@ -1149,7 +1161,7 @@ function AdminWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 sm:gap-4">
               <div className="space-y-1.5">
                 <Label htmlFor="item-price">Preço (R$)</Label>
                 <Input
@@ -1160,6 +1172,16 @@ function AdminWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
                   onChange={(e) =>
                     setEditingItem((prev) => ({ ...prev, price: Number(e.target.value) }))
                   }
+                  className="h-11"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="item-size">Tamanho</Label>
+                <Input
+                  id="item-size"
+                  placeholder="P, M, G, GG ou 250 ml"
+                  value={editingItem?.size || ""}
+                  onChange={(e) => setEditingItem((prev) => ({ ...prev, size: e.target.value }))}
                   className="h-11"
                 />
               </div>
@@ -1196,7 +1218,7 @@ function AdminWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
               <Label htmlFor="item-desc">Descrição</Label>
               <Textarea
                 id="item-desc"
-                placeholder="Ingredientes e detalhes..."
+                placeholder="Proteínas, guarnições e detalhes..."
                 value={editingItem?.description || ""}
                 onChange={(e) =>
                   setEditingItem((prev) => ({ ...prev, description: e.target.value }))
@@ -1500,6 +1522,11 @@ function AdminWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
                         <div className="flex justify-between gap-2 font-semibold">
                           <span>
                             {it.qty}x {it.name}
+                            {it.size ? (
+                              <small className="ml-1 text-[10px] font-medium text-primary">
+                                ({it.size})
+                              </small>
+                            ) : null}
                           </span>
                           <span>{brl(it.unitPrice * it.qty)}</span>
                         </div>

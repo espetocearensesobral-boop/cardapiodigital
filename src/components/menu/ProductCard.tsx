@@ -39,6 +39,9 @@ export function ProductCard({ item, onOpen, onQuickAdd }: Props) {
         <h3 className="line-clamp-2-fix font-display text-sm font-semibold leading-tight">
           {item.name}
         </h3>
+        <p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-primary">
+          Tamanho: {item.size}
+        </p>
         <p className="line-clamp-2-fix mt-1 text-xs leading-snug text-muted-foreground">
           {item.description}
         </p>

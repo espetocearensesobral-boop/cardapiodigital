@@ -22,13 +22,13 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Peça as melhores pizzas artesanais da La Bella Pizza. Cardápio digital com entrega ou consumo no local e pedido direto no WhatsApp.",
+          "Peça quentinhas caseiras da La Bella Pizza. Cardápio digital com entrega ou consumo no local e pedido direto no WhatsApp.",
       },
       { property: "og:title", content: "La Bella Pizza — Cardápio Digital" },
       {
         property: "og:description",
         content:
-          "Pizzas artesanais com entrega rápida. Monte seu pedido e envie direto pelo WhatsApp.",
+          "Quentinhas fresquinhas com entrega rápida. Monte seu pedido e envie direto pelo WhatsApp.",
       },
       { property: "og:type", content: "restaurant.menu" },
       { name: "twitter:card", content: "summary_large_image" },

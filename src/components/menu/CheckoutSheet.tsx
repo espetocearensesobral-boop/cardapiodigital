@@ -140,6 +140,7 @@ export function CheckoutSheet({ open, onClose, cart, notes, onSuccess }: Props) 
           notes: notes.trim() || undefined,
           items: cart.map((line) => ({
             id: line.item.id,
+            size: line.item.size,
             qty: line.qty,
             addons: line.addons,
             obs: line.obs,
@@ -581,6 +582,9 @@ export function CheckoutSheet({ open, onClose, cart, notes, onSuccess }: Props) 
                     <div className="min-w-0">
                       <p className="font-semibold">
                         {line.qty}x {line.item.name}
+                      </p>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-primary">
+                        Tamanho: {line.item.size}
                       </p>
                       {line.addons.length > 0 ? (
                         <p className="mt-0.5 text-xs text-muted-foreground">

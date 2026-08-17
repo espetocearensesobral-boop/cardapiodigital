@@ -76,6 +76,9 @@ export function CartSheet({
               />
               <div className="min-w-0 flex-1">
                 <p className="font-display text-sm font-semibold">{line.item.name}</p>
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-primary">
+                  Tamanho: {line.item.size}
+                </p>
                 {line.addons.length > 0 ? (
                   <p className="text-xs text-muted-foreground">
                     + {line.addons.map((a) => a.name).join(", ")}

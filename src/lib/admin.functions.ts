@@ -18,6 +18,7 @@ const menuItemSchema = z.object({
   id: z.string().optional(),
   name: z.string().trim().min(1).max(120),
   description: z.string().trim().max(500),
+  size: z.string().trim().max(40).default(""),
   price: z.number().finite().min(0).max(100000),
   category: z.string().trim().min(1).max(60),
   image_url: z.string().trim().url().or(z.literal("")),

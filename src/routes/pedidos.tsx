@@ -454,9 +454,16 @@ function OrdersWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
                       className="border-b border-border pb-3 last:border-0 last:pb-0"
                     >
                       <div className="flex items-start justify-between gap-3 text-sm">
-                        <p className="font-semibold">
-                          {item.qty}x {item.name}
-                        </p>
+                        <div>
+                          <p className="font-semibold">
+                            {item.qty}x {item.name}
+                          </p>
+                          {item.size ? (
+                            <p className="text-[11px] font-semibold uppercase tracking-wide text-primary">
+                              Tamanho: {item.size}
+                            </p>
+                          ) : null}
+                        </div>
                         <span className="shrink-0 font-semibold">
                           {brl(item.unitPrice * item.qty)}
                         </span>

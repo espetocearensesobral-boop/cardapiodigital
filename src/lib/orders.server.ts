@@ -9,6 +9,7 @@ export type SelectedAddonInput = {
 
 export type CheckoutItemInput = {
   id: string;
+  size?: string | undefined;
   qty: number;
   addons: SelectedAddonInput[];
   obs: string;
@@ -33,6 +34,7 @@ export type CheckoutInput = {
 
 export type OrderItemInput = {
   name: string;
+  size?: string;
   qty: number;
   unitPrice: number;
   addons: SelectedAddonInput[];
@@ -59,6 +61,7 @@ type StoreSettingsSnapshot = {
 type MenuRow = {
   id: string;
   name: string;
+  size?: string;
   price: number;
   available: boolean;
   addons: unknown;
@@ -146,7 +149,7 @@ async function priceAndValidateItems(input: CheckoutInput) {
       }
     : await supabaseAdmin
         .from("menu_items")
-        .select("id, name, price, available, addons")
+        .select("id, name, size, price, available, addons")
         .in("id", ids);
   const { data: menu, error } = result;
 
@@ -164,6 +167,12 @@ async function priceAndValidateItems(input: CheckoutInput) {
       throw new Error("Um dos produtos selecionados está esgotado.");
     }
 
+    const menuSize = typeof menuItem.size === "string" ? menuItem.size.trim() : "";
+    const selectedSize = selected.size?.trim() ?? "";
+    if (menuSize && selectedSize && menuSize !== selectedSize) {
+      throw new Error("O tamanho selecionado não está mais disponível. Atualize o carrinho.");
+    }
+
     const allowedAddons = new Map(parseAddons(menuItem.addons).map((addon) => [addon.name, addon]));
     const addons = selected.addons.map((addon) => {
       const approved = allowedAddons.get(addon.name);
@@ -174,6 +183,7 @@ async function priceAndValidateItems(input: CheckoutInput) {
     const unitPrice = Number(menuItem.price) + addons.reduce((sum, addon) => sum + addon.price, 0);
     items.push({
       name: menuItem.name,
+      size: menuSize || selectedSize,
       qty: selected.qty,
       unitPrice,
       addons,
@@ -252,12 +262,16 @@ export function buildWhatsappMessage(
 
   for (const item of input.items) {
     lines.push(
-      `*${item.qty}x ${cleanWhatsAppText(item.name)}* - R$ ${money(item.unitPrice * item.qty)}`,
+      `*${item.qty}x ${cleanWhatsAppText(item.name)}${item.size ? ` (${cleanWhatsAppText(item.size)})` : ""}* - R$ ${money(item.unitPrice * item.qty)}`,
     );
     if (item.addons.length > 0) {
       lines.push("_ADICIONAIS:_");
       for (const addon of item.addons) {
-        lines.push(`- ${cleanWhatsAppText(addon.name)} (+R$ ${money(addon.price)})`);
+        lines.push(
+          addon.price > 0
+            ? `- ${cleanWhatsAppText(addon.name)} (+R$ ${money(addon.price)})`
+            : `- ${cleanWhatsAppText(addon.name)} (INCLUSO)`,
+        );
       }
     }
     if (item.obs) lines.push(`_OBSERVAÇÃO:_ ${cleanWhatsAppText(item.obs)}`);

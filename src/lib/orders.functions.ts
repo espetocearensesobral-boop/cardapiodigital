@@ -25,6 +25,7 @@ const orderSchema = z
       .array(
         z.object({
           id: z.string().trim().min(1).max(80),
+          size: z.string().trim().max(40).default(""),
           qty: z.number().int().min(1).max(50),
           addons: z.array(addonSchema).max(30),
           obs: z.string().max(200),

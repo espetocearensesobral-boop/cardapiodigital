@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { Addon, CartLine, MenuItem } from "@/lib/menu";
 
-const STORAGE_KEY = "brasa-cart-v1";
+const STORAGE_KEY = "brasa-cart-v2";
 
 export function useCart() {
   const [cart, setCart] = useState<CartLine[]>([]);
@@ -24,14 +24,14 @@ export function useCart() {
 
   const addItem = useCallback((item: MenuItem, qty: number, addons: Addon[], obs: string) => {
     const unitPrice = item.price + addons.reduce((s, a) => s + a.price, 0);
-    const signature = `${item.id}|${addons
+    const signature = `${item.id}|${item.size}|${addons
       .map((a) => a.name)
       .sort()
       .join(",")}|${obs.trim()}`;
     setCart((prev) => {
       const existing = prev.find(
         (l) =>
-          `${l.item.id}|${l.addons
+          `${l.item.id}|${l.item.size}|${l.addons
             .map((a) => a.name)
             .sort()
             .join(",")}|${l.obs.trim()}` === signature,

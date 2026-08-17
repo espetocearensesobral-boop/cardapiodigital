@@ -83,12 +83,17 @@ export function ProductSheet({ item, open, onClose, onAdd }: Props) {
         <div>
           <h2 className="font-display text-2xl font-bold">{item.name}</h2>
           <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{item.description}</p>
-          <p className="mt-3 font-display text-2xl font-bold text-primary">{brl(item.price)}</p>
+          <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-primary">
+            Tamanho: {item.size}
+          </p>
+          <p className="mt-1 font-display text-2xl font-bold text-primary">{brl(item.price)}</p>
         </div>
 
         {item.addons.length > 0 ? (
           <div>
-            <h3 className="mb-3 font-display text-sm font-semibold">Bordas & Adicionais</h3>
+            <h3 className="mb-3 font-display text-sm font-semibold">
+              {item.category === "quentinhas" ? "Misturas & Guarnições" : "Adicionais"}
+            </h3>
             <div className="space-y-2">
               {item.addons.map((addon) => {
                 const checked = selected.includes(addon.name);
@@ -116,7 +121,7 @@ export function ProductSheet({ item, open, onClose, onAdd }: Props) {
                       <span className="text-sm font-medium">{addon.name}</span>
                     </span>
                     <span className="font-display text-sm font-semibold text-muted-foreground">
-                      + {brl(addon.price)}
+                      {addon.price > 0 ? `+ ${brl(addon.price)}` : "Incluso"}
                     </span>
                   </button>
                 );

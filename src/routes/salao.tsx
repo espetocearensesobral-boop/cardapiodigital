@@ -22,6 +22,7 @@ import {
 import { toast } from "sonner";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { brl } from "@/lib/format";
+import { DEFAULT_MENU_ITEMS } from "@/lib/menu";
 import {
   MOCK_SALON_TABLES,
   SALON_STATUS_META,
@@ -50,18 +51,16 @@ type TableFilter = "all" | SalonTableStatus;
 type CatalogItem = {
   id: string;
   name: string;
+  size: string;
   price: number;
 };
 
-const SALON_CATALOG: CatalogItem[] = [
-  { id: "pizza-mucarela", name: "Muçarela", price: 40 },
-  { id: "pizza-calabresa", name: "Calabresa", price: 42.9 },
-  { id: "pizza-frango", name: "Frango com Catupiry", price: 45.9 },
-  { id: "pizza-portuguesa", name: "Portuguesa", price: 45.9 },
-  { id: "pizza-pepperoni", name: "Pepperoni", price: 45.9 },
-  { id: "coca-2l", name: "Coca-Cola 2L", price: 14 },
-  { id: "guarana-2l", name: "Guaraná Antarctica 2L", price: 12 },
-];
+const SALON_CATALOG: CatalogItem[] = DEFAULT_MENU_ITEMS.map((item) => ({
+  id: item.id,
+  name: item.name,
+  size: item.size,
+  price: item.price,
+}));
 
 const tableStatusClasses: Record<SalonTableStatus, string> = {
   livre: "border-emerald-500/30 bg-emerald-500/5",
@@ -199,6 +198,7 @@ function SalonWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
             {
               id: catalogItem.id,
               name: catalogItem.name,
+              size: catalogItem.size,
               qty: quantity,
               unitPrice: catalogItem.price,
             },
@@ -531,6 +531,11 @@ function SalonWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
                             <p className="text-sm font-semibold">
                               {item.qty}x {item.name}
                             </p>
+                            {item.size ? (
+                              <p className="text-[11px] font-semibold uppercase tracking-wide text-primary">
+                                Tamanho: {item.size}
+                              </p>
+                            ) : null}
                             {item.note ? (
                               <p className="mt-0.5 text-xs italic text-muted-foreground">
                                 Obs.: {item.note}
@@ -564,7 +569,7 @@ function SalonWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
                         >
                           {SALON_CATALOG.map((item) => (
                             <option key={item.id} value={item.id}>
-                              {item.name} — {brl(item.price)}
+                              {item.name} ({item.size}) — {brl(item.price)}
                             </option>
                           ))}
                         </select>

@@ -38,11 +38,11 @@ export type StoreSettings = {
 
 export const DEFAULT_SETTINGS: SystemSettings = {
   name: "La Bella Pizza",
-  tagline: "A melhor pizza da região • Delivery e local",
+  tagline: "Quentinhas fresquinhas • Delivery e local",
   whatsapp: "5588998340085",
   whatsappDisplay: "(88) 99834-0085",
   deliveryFee: 5,
-  minOrder: 30,
+  minOrder: 12,
   openHour: 18,
   closeHour: 23,
   acceptingOrders: true,
@@ -56,21 +56,18 @@ export const DEFAULT_SETTINGS: SystemSettings = {
 };
 
 export const DEFAULT_CATEGORIES: CategoryItem[] = [
-  { id: "tradicional", label: "Tradicional", emoji: "🍕" },
-  { id: "especial", label: "Especial", emoji: "🌟" },
-  { id: "doce", label: "Doce", emoji: "🍫" },
-  { id: "bebidas", label: "Bebidas", emoji: "🥤" },
-  { id: "acompanhamentos", label: "Acompanhamentos", emoji: "🍟" },
-  { id: "sobremesas", label: "Sobremesas", emoji: "🍮" },
+  { id: "quentinhas", label: "Quentinhas", emoji: "🍱" },
+  { id: "saladas", label: "Saladas", emoji: "🥗" },
+  { id: "adicionais", label: "Adicionais", emoji: "🥤" },
 ];
 
 export const DEFAULT_GLOBAL_ADDONS: GlobalAddon[] = [
-  { id: "1", name: "Requeijão Cremoso", price: 6 },
-  { id: "2", name: "Catupiry", price: 8 },
-  { id: "3", name: "Cheddar", price: 6 },
-  { id: "4", name: "Chocolate Harold", price: 6 },
-  { id: "5", name: "Bacon Extra", price: 5 },
-  { id: "6", name: "Extra Queijo", price: 7 },
+  { id: "mistura-file", name: "Filé trinchado", price: 2 },
+  { id: "mistura-carne", name: "Carne de panela com purê", price: 2 },
+  { id: "salada-legumes", name: "Salada de legumes na maionese", price: 7 },
+  { id: "salada-colorida", name: "Salada colorida na maionese", price: 7 },
+  { id: "refri-250", name: "Refrigerante 250 ml", price: 5 },
+  { id: "suco-goiaba", name: "Suco de goiaba", price: 7 },
 ];
 
 const SETTINGS_QUERY_KEY = ["store-settings"] as const;

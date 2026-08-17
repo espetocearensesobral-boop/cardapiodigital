@@ -57,9 +57,9 @@ export const Route = createFileRoute("/pdv")({
 type CategoryFilter = "todos" | string;
 
 const CATEGORY_LABELS: Record<string, string> = {
-  tradicional: "Tradicionais",
-  especial: "Especiais",
-  bebidas: "Bebidas",
+  quentinhas: "Quentinhas",
+  saladas: "Saladas",
+  adicionais: "Adicionais",
 };
 
 function PdvPage() {
@@ -198,7 +198,7 @@ function PdvWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
   function confirmProduct() {
     if (!selectedProduct) return;
     const quantity = Math.max(1, Number.parseInt(selectedQty, 10) || 1);
-    const addonKey = selectedAddons.map((addon) => addon.name).join("|");
+    const addonKey = `${selectedProduct.size}|${selectedAddons.map((addon) => addon.name).join("|")}`;
     setCart((current) => {
       const existing = current.find(
         (line) =>
@@ -216,6 +216,7 @@ function PdvWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
           lineId: `${selectedProduct.id}-${Date.now()}`,
           itemId: selectedProduct.id,
           name: selectedProduct.name,
+          size: selectedProduct.size,
           qty: quantity,
           unitPrice: selectedProduct.price,
           addons: selectedAddons,
@@ -456,9 +457,14 @@ function PdvWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
                       </div>
                       <div className="p-3">
                         <div className="flex items-start justify-between gap-2">
-                          <h3 className="line-clamp-2 text-sm font-bold leading-snug">
-                            {item.name}
-                          </h3>
+                          <div className="min-w-0">
+                            <h3 className="line-clamp-2 text-sm font-bold leading-snug">
+                              {item.name}
+                            </h3>
+                            <p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-primary">
+                              Tamanho: {item.size}
+                            </p>
+                          </div>
                           <span className="shrink-0 text-sm font-bold text-primary">
                             {brl(item.price)}
                           </span>
@@ -620,13 +626,22 @@ function PdvWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
           </DialogHeader>
           {selectedProduct ? (
             <div className="space-y-5">
-              <div className="flex items-center justify-between rounded-2xl bg-accent px-4 py-3 text-primary">
-                <span className="text-sm font-semibold">Preço base</span>
-                <strong>{brl(selectedProduct.price)}</strong>
+              <div className="rounded-2xl bg-accent px-4 py-3 text-primary">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-sm font-semibold">Preço base</span>
+                  <strong>{brl(selectedProduct.price)}</strong>
+                </div>
+                <p className="mt-1 text-xs font-semibold uppercase tracking-wide">
+                  Tamanho: {selectedProduct.size}
+                </p>
               </div>
               {selectedProduct.addons.length ? (
                 <div className="space-y-2">
-                  <Label>Adicionais</Label>
+                  <Label>
+                    {selectedProduct.category === "quentinhas"
+                      ? "Misturas & Guarnições"
+                      : "Adicionais"}
+                  </Label>
                   <div className="grid gap-2 sm:grid-cols-2">
                     {selectedProduct.addons.map((addon) => {
                       const selected = selectedAddons.some((item) => item.name === addon.name);
@@ -650,7 +665,9 @@ function PdvWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
                             </span>
                             {addon.name}
                           </span>
-                          <span className="font-semibold">+{brl(addon.price)}</span>
+                          <span className="font-semibold">
+                            {addon.price > 0 ? `+${brl(addon.price)}` : "Incluso"}
+                          </span>
                         </button>
                       );
                     })}
@@ -816,6 +833,7 @@ function PdvWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
                   <div key={line.lineId} className="flex justify-between gap-3 text-sm">
                     <span>
                       {line.qty}x {line.name}
+                      <small className="ml-1 text-xs text-muted-foreground">({line.size})</small>
                     </span>
                     <strong>{brl(pdvLineTotal(line))}</strong>
                   </div>
@@ -897,6 +915,9 @@ function PdvCartItem({
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-sm font-bold leading-snug">{line.name}</p>
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-primary">
+            Tamanho: {line.size || "Não informado"}
+          </p>
           {line.addons.length ? (
             <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
               + {line.addons.map((addon) => addon.name).join(", ")}

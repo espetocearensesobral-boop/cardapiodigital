@@ -4,6 +4,7 @@ export type CommandStatus = "aberta" | "aguardando_pagamento";
 export type SalonCommandItem = {
   id: string;
   name: string;
+  size?: string;
   qty: number;
   unitPrice: number;
   note?: string;
@@ -62,8 +63,8 @@ export const MOCK_SALON_TABLES: SalonTable[] = [
       openedAt: "2026-08-16T20:14:00-03:00",
       status: "aberta",
       items: [
-        { id: "pizza-mucarela", name: "Muçarela", qty: 1, unitPrice: 40 },
-        { id: "coca-2l", name: "Coca-Cola 2L", qty: 1, unitPrice: 14 },
+        { id: "quentinha-m", name: "Quentinha M", size: "M", qty: 1, unitPrice: 14 },
+        { id: "refri-250", name: "Refrigerante 250 ml", size: "250 ml", qty: 1, unitPrice: 5 },
       ],
     },
   },
@@ -80,9 +81,15 @@ export const MOCK_SALON_TABLES: SalonTable[] = [
       openedAt: "2026-08-16T20:32:00-03:00",
       status: "aberta",
       items: [
-        { id: "pizza-calabresa", name: "Calabresa", qty: 1, unitPrice: 42.9 },
-        { id: "pizza-frango", name: "Frango com Catupiry", qty: 1, unitPrice: 45.9 },
-        { id: "guarana-2l", name: "Guaraná Antarctica 2L", qty: 1, unitPrice: 12 },
+        { id: "quentinha-g", name: "Quentinha G", size: "G", qty: 1, unitPrice: 20 },
+        {
+          id: "salada-colorida",
+          name: "Salada colorida na maionese",
+          size: "Porção",
+          qty: 1,
+          unitPrice: 7,
+        },
+        { id: "refri-1l", name: "Refrigerante 1 litro", size: "1 litro", qty: 1, unitPrice: 8 },
       ],
     },
   },
@@ -99,8 +106,8 @@ export const MOCK_SALON_TABLES: SalonTable[] = [
       openedAt: "2026-08-16T19:48:00-03:00",
       status: "aguardando_pagamento",
       items: [
-        { id: "pizza-portuguesa", name: "Portuguesa", qty: 1, unitPrice: 45.9 },
-        { id: "suco-laranja", name: "Suco de laranja", qty: 2, unitPrice: 8 },
+        { id: "quentinha-p", name: "Quentinha P", size: "P", qty: 1, unitPrice: 12 },
+        { id: "suco-goiaba", name: "Suco de goiaba", size: "Copo 300 ml", qty: 2, unitPrice: 7 },
       ],
     },
   },
@@ -117,8 +124,8 @@ export const MOCK_SALON_TABLES: SalonTable[] = [
       openedAt: "2026-08-16T20:50:00-03:00",
       status: "aberta",
       items: [
-        { id: "pizza-quatro-queijos", name: "Quatro Queijos", qty: 2, unitPrice: 42.9 },
-        { id: "pizza-pepperoni", name: "Pepperoni", qty: 1, unitPrice: 45.9 },
+        { id: "quentinha-gg", name: "Quentinha GG", size: "GG", qty: 1, unitPrice: 30 },
+        { id: "extra-file", name: "Filé trinchado extra", size: "Extra", qty: 1, unitPrice: 2 },
       ],
     },
   },

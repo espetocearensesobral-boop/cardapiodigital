@@ -73,6 +73,7 @@ describe("orders.server", () => {
         items: [
           {
             name: "Calabresa",
+            size: "M",
             qty: 1,
             unitPrice: 48,
             addons: [{ name: "Catupiry", price: 8 }],
@@ -88,6 +89,7 @@ describe("orders.server", () => {
     expect(message).toContain("LBP-123456");
     expect(message).toContain("*LA BELLA PIZZA*");
     expect(message).toContain("*ITENS DO PEDIDO*");
+    expect(message).toContain("*1x Calabresa (M)*");
     expect(message).toContain("_ADICIONAIS:_\n- Catupiry (+R$ 8,00)");
     expect(message).toContain("*PAGAMENTO:* PIX");
     expect(message).toContain("*TOTAL DO PEDIDO: R$ 53,00*");
@@ -138,16 +140,17 @@ describe("orders.server", () => {
       changeFor: "50",
       items: [
         {
-          id: "1",
+          id: "quentinha-p",
+          size: "P",
           qty: 1,
-          addons: [{ name: "Catupiry", price: 0 }],
+          addons: [{ name: "Strogonoff de carne", price: 0 }],
           obs: "",
         },
       ],
     });
 
     expect(result.code).toMatch(/^LBP-\d{6}$/);
-    expect(result.total).toBe(53);
+    expect(result.total).toBe(17);
     expect(result.whatsappUrl).toContain("wa.me/5588998340085");
     expect(decodeURIComponent(result.whatsappUrl)).toContain("_ADICIONAIS:_");
     expect(decodeURIComponent(result.whatsappUrl)).toContain("*TROCO PARA:* R$ 50,00");

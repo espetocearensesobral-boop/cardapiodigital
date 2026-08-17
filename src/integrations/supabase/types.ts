@@ -80,6 +80,7 @@ export type Database = {
           image_url: string;
           name: string;
           price: number;
+          size: string;
           sort_order: number;
         };
         Insert: {
@@ -93,6 +94,7 @@ export type Database = {
           image_url?: string;
           name: string;
           price: number;
+          size?: string;
           sort_order?: number;
         };
         Update: {
@@ -106,6 +108,7 @@ export type Database = {
           image_url?: string;
           name?: string;
           price?: number;
+          size?: string;
           sort_order?: number;
         };
         Relationships: [];
