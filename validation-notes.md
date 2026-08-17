@@ -45,3 +45,7 @@ A nova rota respondeu HTTP 200 no preview Nitro/Vercel e renderizou o estado pro
 ## Acesso administrativo mockado
 
 No preview de produção, a tela `/admin` exibiu as credenciais de demonstração. O login com `admin@labellapizza.local` e `LaBella@2026` autorizou o painel sem consultar o Supabase, manteve a sessão no navegador e permitiu abrir `/pedidos`. A central exibiu 6 pedidos mockados, métricas, fluxo operacional, filtros e ações de status.
+
+## Painel admin em desktop
+
+No preview atualizado, o painel admin passou a ocupar até 1600px com padding progressivo. Em viewport ampla de validação, o cabeçalho distribuiu retorno, identificação, acesso a Pedidos e Sair sem compressão; as abas ficaram com largura confortável; a tabela de produtos aproveitou o espaço horizontal e manteve ações acessíveis. O login demo e a sessão foram preservados.

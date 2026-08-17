@@ -452,8 +452,8 @@ function AdminWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
   };
 
   return (
-    <div className="mx-auto min-h-screen w-full max-w-5xl bg-background p-3 sm:p-6 md:p-8">
-      <header className="mb-4 sm:mb-6 flex flex-col sm:flex-row sm:items-center justify-between border-b pb-4 gap-3">
+    <div className="mx-auto min-h-screen w-full max-w-[1600px] bg-background px-3 py-4 sm:px-6 sm:py-6 lg:px-10 lg:py-8 xl:px-12">
+      <header className="mb-5 flex flex-col gap-4 border-b border-border pb-5 sm:mb-7 sm:flex-row sm:items-center sm:justify-between lg:mb-8">
         <div className="flex items-center gap-3">
           <Link
             to="/"
@@ -467,7 +467,7 @@ function AdminWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
               Painel Administrativo
             </h1>
             <p className="text-xs sm:text-sm text-muted-foreground break-words">
-              Gerencie produtos, categorias, adicionais e configurações
+              Gerencie produtos, pedidos, categorias, adicionais e configurações
             </p>
           </div>
         </div>
@@ -491,24 +491,24 @@ function AdminWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
       </header>
 
       <Tabs defaultValue="produtos" className="w-full">
-        <TabsList className="mb-4 sm:mb-6 flex w-full overflow-x-auto border bg-card p-1 rounded-xl shadow-xs gap-1">
+        <TabsList className="mb-5 flex w-full gap-1 overflow-x-auto rounded-2xl border bg-card p-1 shadow-xs sm:mb-7 lg:w-fit lg:justify-start lg:p-1.5">
           <TabsTrigger
             value="produtos"
-            className="flex-1 min-w-[100px] gap-1.5 text-xs sm:text-sm py-2.5"
+            className="min-w-[100px] flex-1 gap-1.5 py-2.5 text-xs sm:text-sm lg:min-w-[180px] lg:flex-none"
           >
             <Package className="size-4 shrink-0" />
             <span className="truncate">Produtos</span>
           </TabsTrigger>
           <TabsTrigger
             value="pedidos"
-            className="flex-1 min-w-[120px] gap-1.5 text-xs sm:text-sm py-2.5"
+            className="min-w-[120px] flex-1 gap-1.5 py-2.5 text-xs sm:text-sm lg:min-w-[180px] lg:flex-none"
           >
             <ShoppingBag className="size-4 shrink-0" />
             <span className="truncate">Pedidos</span>
           </TabsTrigger>
           <TabsTrigger
             value="sistema"
-            className="flex-1 min-w-[110px] gap-1.5 text-xs sm:text-sm py-2.5"
+            className="min-w-[110px] flex-1 gap-1.5 py-2.5 text-xs sm:text-sm lg:min-w-[180px] lg:flex-none"
           >
             <SettingsIcon className="size-4 shrink-0" />
             <span className="truncate">Sistema</span>
