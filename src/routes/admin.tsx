@@ -7,6 +7,7 @@ import {
   Pencil,
   Trash2,
   ArrowLeft,
+  BarChart3,
   Image as ImageIcon,
   Settings as SettingsIcon,
   Package,
@@ -476,6 +477,12 @@ function AdminWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
             <Link to="/pedidos">
               <ShoppingBag className="size-4" />
               Pedidos
+            </Link>
+          </Button>
+          <Button asChild type="button" variant="outline" className="h-10 gap-2">
+            <Link to="/financeiro">
+              <BarChart3 className="size-4" />
+              Financeiro
             </Link>
           </Button>
           <Button
