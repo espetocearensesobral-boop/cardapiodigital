@@ -468,46 +468,45 @@ function PdvWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
               </div>
 
               {filteredProducts.length ? (
-                <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+                <div className="pdv-catalog-list scroll-panel mt-5 space-y-2 pr-2">
                   {filteredProducts.map((item) => (
                     <button
                       key={item.id}
                       type="button"
                       onClick={() => openProduct(item)}
-                      className="group overflow-hidden rounded-2xl border border-border bg-background text-left transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-card focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      aria-label={`Adicionar ${item.name}`}
+                      className="group flex min-h-20 w-full items-center gap-3 rounded-2xl border border-border bg-background p-2.5 text-left transition-colors hover:border-primary/40 hover:bg-accent/45 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:gap-4 sm:p-3"
                     >
-                      <div className="relative aspect-[1.45] overflow-hidden bg-muted">
+                      <div className="size-16 shrink-0 overflow-hidden rounded-xl bg-muted sm:size-[4.5rem]">
                         <img
                           src={item.image_url}
                           alt=""
-                          className="size-full object-cover transition-transform duration-200 group-hover:scale-[1.03]"
+                          className="size-full object-cover transition-transform duration-200 group-hover:scale-[1.04]"
                         />
-                        <span className="absolute bottom-2 right-2 inline-flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg">
-                          <Plus className="size-4" />
-                        </span>
                       </div>
-                      <div className="p-3">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="min-w-0">
-                            <h3 className="line-clamp-2 text-sm font-bold leading-snug">
-                              {item.name}
-                            </h3>
-                            <p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-primary">
-                              Tamanho: {item.size}
-                            </p>
-                          </div>
-                          <span className="shrink-0 text-sm font-bold text-primary">
-                            {brl(item.price)}
+                      <div className="min-w-0 flex-1">
+                        <h3 className="line-clamp-2 text-sm font-bold leading-snug sm:text-[15px]">
+                          {item.name}
+                        </h3>
+                        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                          <span className="text-[11px] font-semibold uppercase tracking-wide text-primary">
+                            Tamanho: {item.size}
                           </span>
+                          {item.addons.length ? (
+                            <span className="text-[11px] font-medium text-muted-foreground">
+                              {item.addons.length} opções
+                            </span>
+                          ) : null}
                         </div>
-                        <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+                        <p className="mt-1 hidden line-clamp-1 text-xs leading-relaxed text-muted-foreground sm:block">
                           {item.description}
                         </p>
-                        {item.addons.length ? (
-                          <p className="mt-2 text-[11px] font-semibold text-primary">
-                            {item.addons.length} adicionais disponíveis
-                          </p>
-                        ) : null}
+                      </div>
+                      <div className="flex shrink-0 flex-col items-end justify-center gap-2">
+                        <span className="text-sm font-bold text-primary">{brl(item.price)}</span>
+                        <span className="inline-flex size-8 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm transition-transform group-hover:scale-105 sm:size-9">
+                          <Plus className="size-4" />
+                        </span>
                       </div>
                     </button>
                   ))}

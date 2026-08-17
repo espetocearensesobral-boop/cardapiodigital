@@ -174,6 +174,39 @@
   }
 }
 
+@utility pdv-catalog-list {
+  max-height: min(680px, calc(100dvh - 18rem));
+  overflow-y: auto;
+}
+
+@utility scroll-panel {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklab, var(--color-primary) 45%, transparent)
+    color-mix(in oklab, var(--color-muted) 72%, transparent);
+  overscroll-behavior: contain;
+
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    border-radius: 999px;
+    background: color-mix(in oklab, var(--color-muted) 72%, transparent);
+  }
+
+  &::-webkit-scrollbar-thumb {
+    border: 2px solid transparent;
+    border-radius: 999px;
+    background: color-mix(in oklab, var(--color-primary) 45%, transparent);
+    background-clip: padding-box;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: var(--color-primary);
+    background-clip: padding-box;
+  }
+}
+
 @utility line-clamp-2-fix {
   display: -webkit-box;
   -webkit-line-clamp: 2;
