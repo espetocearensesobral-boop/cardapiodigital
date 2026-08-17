@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as FinanceiroRouteImport } from './routes/financeiro'
+import { Route as PdvRouteImport } from './routes/pdv'
 import { Route as PedidosRouteImport } from './routes/pedidos'
 import { Route as SalaoRouteImport } from './routes/salao'
 
@@ -30,6 +31,11 @@ const FinanceiroRoute = FinanceiroRouteImport.update({
   path: '/financeiro',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PdvRoute = PdvRouteImport.update({
+  id: '/pdv',
+  path: '/pdv',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PedidosRoute = PedidosRouteImport.update({
   id: '/pedidos',
   path: '/pedidos',
@@ -45,6 +51,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/financeiro': typeof FinanceiroRoute
+  '/pdv': typeof PdvRoute
   '/pedidos': typeof PedidosRoute
   '/salao': typeof SalaoRoute
 }
@@ -52,6 +59,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/financeiro': typeof FinanceiroRoute
+  '/pdv': typeof PdvRoute
   '/pedidos': typeof PedidosRoute
   '/salao': typeof SalaoRoute
 }
@@ -60,21 +68,24 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/financeiro': typeof FinanceiroRoute
+  '/pdv': typeof PdvRoute
   '/pedidos': typeof PedidosRoute
   '/salao': typeof SalaoRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/admin' | '/financeiro' | '/pedidos' | '/salao'
+  fullPaths: '/' | '/admin' | '/financeiro' | '/pdv' | '/pedidos' | '/salao'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin' | '/financeiro' | '/pedidos' | '/salao'
-  id: '__root__' | '/' | '/admin' | '/financeiro' | '/pedidos' | '/salao'
+  to: '/' | '/admin' | '/financeiro' | '/pdv' | '/pedidos' | '/salao'
+  id:
+    '__root__' | '/' | '/admin' | '/financeiro' | '/pdv' | '/pedidos' | '/salao'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
   FinanceiroRoute: typeof FinanceiroRoute
+  PdvRoute: typeof PdvRoute
   PedidosRoute: typeof PedidosRoute
   SalaoRoute: typeof SalaoRoute
 }
@@ -102,6 +113,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FinanceiroRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pdv': {
+      id: '/pdv'
+      path: '/pdv'
+      fullPath: '/pdv'
+      preLoaderRoute: typeof PdvRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/pedidos': {
       id: '/pedidos'
       path: '/pedidos'
@@ -123,6 +141,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
   FinanceiroRoute: FinanceiroRoute,
+  PdvRoute: PdvRoute,
   PedidosRoute: PedidosRoute,
   SalaoRoute: SalaoRoute,
 }

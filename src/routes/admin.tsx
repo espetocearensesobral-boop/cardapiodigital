@@ -9,6 +9,7 @@ import {
   ArrowLeft,
   Armchair,
   BarChart3,
+  Calculator,
   Image as ImageIcon,
   Settings as SettingsIcon,
   Package,
@@ -474,6 +475,12 @@ function AdminWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
           </div>
         </div>
         <div className="flex items-center gap-2 self-end sm:self-auto">
+          <Button asChild type="button" variant="outline" className="h-10 gap-2">
+            <Link to="/pdv">
+              <Calculator className="size-4" />
+              PDV
+            </Link>
+          </Button>
           <Button asChild type="button" variant="outline" className="h-10 gap-2">
             <Link to="/pedidos">
               <ShoppingBag className="size-4" />
